@@ -3,6 +3,7 @@ package io.github.gregoryfeijon.serializer.provider.util.enums;
 import io.github.gregoryfeijon.serializer.provider.domain.annotation.EnumUseAttributeInMarshalling;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.springframework.util.StringUtils;
 
 /**
  * 08/11/2025 às 19:48
@@ -27,15 +28,15 @@ public final class EnumMarshallingUtil {
             String deserializeAttributeName = useAttribute.deserializeAttributeName();
             String defaultAttributeName = useAttribute.defaultAttributeName();
 
-            if (!serializeAttributeName.isEmpty()) {
+            if (StringUtils.hasText(serializeAttributeName)) {
                 return serializeAttributeName;
             }
 
-            if (!deserializeAttributeName.isEmpty()) {
+            if (StringUtils.hasText(deserializeAttributeName)) {
                 return deserializeAttributeName;
             }
 
-            if (!defaultAttributeName.isEmpty()) {
+            if (StringUtils.hasText(defaultAttributeName)) {
                 return defaultAttributeName;
             }
         }
