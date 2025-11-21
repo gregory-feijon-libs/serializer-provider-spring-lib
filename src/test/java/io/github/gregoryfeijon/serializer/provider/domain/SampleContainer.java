@@ -1,7 +1,7 @@
 package io.github.gregoryfeijon.serializer.provider.domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -9,7 +9,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class SampleContainer<T> {
 
     private T value;

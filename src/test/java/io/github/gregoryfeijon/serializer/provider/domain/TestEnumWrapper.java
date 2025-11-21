@@ -1,19 +1,19 @@
 package io.github.gregoryfeijon.serializer.provider.domain;
 
+import io.github.gregoryfeijon.serializer.provider.domain.enums.AnnotatedEnum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Simple test entity for generic type testing.
+ * Helper class for testing enum serialization in complex objects.
  */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class TestEntity {
+public class TestEnumWrapper {
 
-    private String name;
-    private Integer id;
+    private AnnotatedEnum enumValue;
 }

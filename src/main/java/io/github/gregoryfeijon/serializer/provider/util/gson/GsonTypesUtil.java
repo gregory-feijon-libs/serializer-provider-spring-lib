@@ -1,6 +1,7 @@
 package io.github.gregoryfeijon.serializer.provider.util.gson;
 
 import com.google.gson.reflect.TypeToken;
+import io.github.gregoryfeijon.serializer.provider.exception.ApiException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -33,6 +34,9 @@ public final class GsonTypesUtil {
      * @return A Type representing the parameterized type
      */
     public static Type getType(Class<?> rawClass, Class<?> genClass) {
+        if (rawClass == null || genClass == null) {
+            throw new ApiException("Raw class and generic class must not be null");
+        }
         return new ParameterizedType() {
             @Override
             public Type[] getActualTypeArguments() {
@@ -61,6 +65,9 @@ public final class GsonTypesUtil {
      * @return A Type representing {@code List<clazz>}
      */
     public static Type getListType(Class<?> clazz) {
+        if (clazz == null) {
+            throw new ApiException("Class must not be null");
+        }
         return TypeToken.getParameterized(List.class, clazz).getType();
     }
 
@@ -74,6 +81,9 @@ public final class GsonTypesUtil {
      * @return A Type representing {@code Set<clazz>}
      */
     public static Type getSetType(Class<?> clazz) {
+        if (clazz == null) {
+            throw new ApiException("Class must not be null");
+        }
         return TypeToken.getParameterized(Set.class, clazz).getType();
     }
 
@@ -87,6 +97,9 @@ public final class GsonTypesUtil {
      * @return A Type representing {@code Collection<clazz>}
      */
     public static Type getCollectionType(Class<?> clazz) {
+        if (clazz == null) {
+            throw new ApiException("Class must not be null");
+        }
         return TypeToken.getParameterized(Collection.class, clazz).getType();
     }
 }
