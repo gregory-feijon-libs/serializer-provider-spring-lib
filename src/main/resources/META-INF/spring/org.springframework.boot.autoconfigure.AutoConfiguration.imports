@@ -1,0 +1,2 @@
+io.github.gregoryfeijon.serializer.provider.config.JacksonCustomizationAutoConfiguration
+io.github.gregoryfeijon.serializer.provider.config.SerializerProviderAutoConfiguration
