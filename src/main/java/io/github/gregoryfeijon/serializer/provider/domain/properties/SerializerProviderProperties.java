@@ -38,4 +38,14 @@ public class SerializerProviderProperties {
      * Common values are "gson" and "jackson".
      */
     private String type = "gson";
+
+    /**
+     * Specifies the default bean name for gson
+     */
+    private String defaultGsonBean;
+
+    /**
+     * Specifies the default bean name for jackson
+     */
+    private String defaultJacksonBean;
 }
