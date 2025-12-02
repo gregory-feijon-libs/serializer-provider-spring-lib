@@ -399,11 +399,8 @@ public final class SerializerProvider {
      * Gets the global default serializer adapter.
      * <p>
      * This method returns the default adapter for the default serialization type.
-     * The default type is determined during initialization as:
-     * <ul>
-     *   <li>GSON if any Gson beans are available</li>
-     *   <li>JACKSON if only ObjectMapper beans are available</li>
-     * </ul>
+     * The default type is determined during initialization based on configuration
+     * and available beans.
      * <p>
      * If the provider hasn't been initialized yet, this method triggers
      * automatic initialization.
@@ -422,21 +419,7 @@ public final class SerializerProvider {
         if (DEFAULT_ADAPTERS.isEmpty()) {
             initializeIfEmpty();
         }
-        return getSerializerAdapter();
-    }
-
-    /**
-     * Retrieves the global default serializer adapter from the default adapters map.
-     *
-     * @return The default serializer adapter
-     * @throws IllegalStateException If no default adapter is found
-     */
-    private static SerializerAdapter getSerializerAdapter() {
-        SerializerAdapter adapter = DEFAULT_ADAPTERS.get(defaultType);
-        if (adapter == null) {
-            throw new IllegalStateException("No default adapter found!");
-        }
-        return adapter;
+        return getDefaultAdapter(defaultType);
     }
 
     /**
@@ -457,25 +440,32 @@ public final class SerializerProvider {
      * SerializerAdapter jacksonAdapter = SerializerProvider.getAdapter(SerializationType.JACKSON);
      * }</pre>
      *
-     * @param type The serialization type (GSON or JACKSON)
+     * @param type The serialization type (GSON or JACKSON), must not be null
      * @return The default adapter for the specified type
-     * @throws IllegalStateException If no adapter is found for the specified type
+     * @throws IllegalStateException    If no adapter is found for the specified type
      */
     public static SerializerAdapter getAdapter(SerializationType type) {
         if (DEFAULT_ADAPTERS.isEmpty()) {
             initializeIfEmpty();
         }
-        return getSerializerAdapter(type);
+        return getDefaultAdapter(type);
     }
 
     /**
-     * Retrieves the default serializer adapter for a specific type.
+     * Retrieves a serializer adapter from the default adapters map.
+     * <p>
+     * This is a helper method that encapsulates the common logic of retrieving
+     * an adapter from the DEFAULT_ADAPTERS map with proper null checking.
      *
-     * @param type The serialization type
-     * @return The default adapter for the specified type
+     * @param type The serialization type to look up
+     * @return The serializer adapter for the specified type
+     * @throws IllegalArgumentException If type is null
      * @throws IllegalStateException If no adapter is found for the specified type
      */
-    private static SerializerAdapter getSerializerAdapter(SerializationType type) {
+    private static SerializerAdapter getDefaultAdapter(SerializationType type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Serialization type cannot be null");
+        }
         SerializerAdapter adapter = DEFAULT_ADAPTERS.get(type);
         if (adapter == null) {
             throw new IllegalStateException(
