@@ -107,6 +107,12 @@ public final class SerializerProvider {
      */
     private static volatile SerializationType defaultType;
 
+    /**
+     * Configuration properties reference cached for performance.
+     * <p>
+     * This atomic reference holds the {@link SerializerProviderProperties} instance
+     * to avoid repeated bean lookups during initialization checks.
+     */
     private static final AtomicReference<SerializerProviderProperties> configProps = new AtomicReference<>();
 
     /**
@@ -157,18 +163,39 @@ public final class SerializerProvider {
         }
     }
 
+    /**
+     * Determines the global default serialization type.
+     * <p>
+     * This method selects the default type using the following priority:
+     * <ol>
+     *   <li>Configuration property {@code serializer-provider.main.type} (if set and valid)</li>
+     *   <li>GSON if any Gson beans are available</li>
+     *   <li>JACKSON if only ObjectMapper beans are available</li>
+     * </ol>
+     *
+     * @return The selected default serialization type
+     */
     private static SerializationType initializeDefaultType() {
         var propsDefaultType = configProps.get().getType();
         if (StringUtils.hasText(propsDefaultType)) {
-            var serializationTypeProps = EnumUtil.getEnumOrNull(SerializationType.class,
-                    SerializationType::getDescription, propsDefaultType);
+            var serializationTypeProps = EnumUtil.getEnumOrNull(
+                    SerializationType.class,
+                    SerializationType::getDescription,
+                    propsDefaultType
+            );
             if (serializationTypeProps != null) {
+                log.debug("Using configured default type: {}", serializationTypeProps);
                 return serializationTypeProps;
             }
+            log.warn("Invalid serialization type configured: '{}'. Falling back to auto-detection.", propsDefaultType);
         }
-        return QUALIFIED_ADAPTERS.containsKey(SerializationType.GSON)
+
+        SerializationType autoDetectedType = QUALIFIED_ADAPTERS.containsKey(SerializationType.GSON)
                 ? SerializationType.GSON
                 : SerializationType.JACKSON;
+
+        log.debug("Auto-detected default type: {}", autoDetectedType);
+        return autoDetectedType;
     }
 
     /**
@@ -349,6 +376,15 @@ public final class SerializerProvider {
         return false;
     }
 
+    /**
+     * Initializes the configuration properties if not already loaded.
+     * <p>
+     * This method loads the {@link SerializerProviderProperties} from the Spring
+     * context and caches it for future use. This initialization is performed once
+     * and the result is reused across all subsequent calls.
+     *
+     * @throws ApiException If the properties bean cannot be retrieved from the context
+     */
     private static void initializeProps() {
         if (configProps.get() == null) {
             SerializerProviderProperties props = FactoryUtil.getBean(SerializerProviderProperties.class);
@@ -358,8 +394,6 @@ public final class SerializerProvider {
             configProps.set(props);
         }
     }
-
-    // ==================== Public API ====================
 
     /**
      * Gets the global default serializer adapter.
@@ -388,6 +422,16 @@ public final class SerializerProvider {
         if (DEFAULT_ADAPTERS.isEmpty()) {
             initializeIfEmpty();
         }
+        return getSerializerAdapter();
+    }
+
+    /**
+     * Retrieves the global default serializer adapter from the default adapters map.
+     *
+     * @return The default serializer adapter
+     * @throws IllegalStateException If no default adapter is found
+     */
+    private static SerializerAdapter getSerializerAdapter() {
         SerializerAdapter adapter = DEFAULT_ADAPTERS.get(defaultType);
         if (adapter == null) {
             throw new IllegalStateException("No default adapter found!");
@@ -421,6 +465,17 @@ public final class SerializerProvider {
         if (DEFAULT_ADAPTERS.isEmpty()) {
             initializeIfEmpty();
         }
+        return getSerializerAdapter(type);
+    }
+
+    /**
+     * Retrieves the default serializer adapter for a specific type.
+     *
+     * @param type The serialization type
+     * @return The default adapter for the specified type
+     * @throws IllegalStateException If no adapter is found for the specified type
+     */
+    private static SerializerAdapter getSerializerAdapter(SerializationType type) {
         SerializerAdapter adapter = DEFAULT_ADAPTERS.get(type);
         if (adapter == null) {
             throw new IllegalStateException(
@@ -460,24 +515,32 @@ public final class SerializerProvider {
      * String localJson = brAdapter.serialize(internalData);
      * }</pre>
      *
-     * @param type     The serialization type (GSON or JACKSON)
-     * @param beanName The Spring bean name of the desired adapter configuration
+     * @param type     The serialization type (GSON or JACKSON), must not be null
+     * @param beanName The Spring bean name of the desired adapter configuration, must not be null or blank
      * @return The serializer adapter registered with the specified name
-     * @throws IllegalStateException If no adapter is found with the specified type and name.
-     *                               The exception message includes a list of available bean names.
+     * @throws IllegalArgumentException If type or beanName is null or blank
+     * @throws IllegalStateException    If no adapter is found with the specified type and name.
+     *                                  The exception message includes a list of available bean names.
      */
     public static SerializerAdapter getAdapter(SerializationType type, String beanName) {
+        validatedParams(type, beanName);
         if (QUALIFIED_ADAPTERS.isEmpty()) {
             initializeIfEmpty();
         }
 
-        Map<String, SerializerAdapter> adaptersForType = QUALIFIED_ADAPTERS.get(type);
-        if (adaptersForType == null) {
-            throw new IllegalStateException(
-                    String.format("No adapters registered for type '%s'", type)
-            );
-        }
+        return getSerializerAdapter(type, beanName);
+    }
 
+    /**
+     * Retrieves a specific serializer adapter by type and bean name.
+     *
+     * @param type     The serialization type
+     * @param beanName The bean name
+     * @return The serializer adapter
+     * @throws IllegalStateException If no adapter is found with the specified parameters
+     */
+    private static SerializerAdapter getSerializerAdapter(SerializationType type, String beanName) {
+        Map<String, SerializerAdapter> adaptersForType = getMappedQualifiedAdapters(type);
         SerializerAdapter adapter = adaptersForType.get(beanName);
         if (adapter == null) {
             throw new IllegalStateException(
@@ -485,8 +548,40 @@ public final class SerializerProvider {
                             type, beanName, adaptersForType.keySet())
             );
         }
-
         return adapter;
+    }
+
+    /**
+     * Retrieves the map of qualified adapters for a specific type.
+     *
+     * @param type The serialization type
+     * @return Map of bean names to adapters for the specified type
+     * @throws IllegalStateException If no adapters are registered for the type
+     */
+    private static Map<String, SerializerAdapter> getMappedQualifiedAdapters(SerializationType type) {
+        Map<String, SerializerAdapter> adaptersForType = QUALIFIED_ADAPTERS.get(type);
+        if (adaptersForType == null) {
+            throw new IllegalStateException(
+                    String.format("No adapters registered for type '%s'", type)
+            );
+        }
+        return adaptersForType;
+    }
+
+    /**
+     * Validates method parameters for adapter retrieval.
+     *
+     * @param type     The serialization type
+     * @param beanName The bean name
+     * @throws IllegalArgumentException If any parameter is invalid
+     */
+    private static void validatedParams(SerializationType type, String beanName) {
+        if (type == null) {
+            throw new IllegalArgumentException("Serialization type cannot be null");
+        }
+        if (!StringUtils.hasText(beanName)) {
+            throw new IllegalArgumentException("Bean name cannot be null or blank");
+        }
     }
 
     /**
