@@ -1,17 +1,18 @@
 package io.github.gregoryfeijon.serializer.provider;
 
+import io.github.gregoryfeijon.object.factory.commons.utils.factory.FactoryUtil;
+import io.github.gregoryfeijon.serializer.provider.config.TestSerializerConfiguration;
 import io.github.gregoryfeijon.serializer.provider.domain.ComplexEntity;
 import io.github.gregoryfeijon.serializer.provider.domain.TestEntity;
 import io.github.gregoryfeijon.serializer.provider.domain.TestSerializableEntity;
 import io.github.gregoryfeijon.serializer.provider.exception.ApiException;
-import io.github.gregoryfeijon.serializer.provider.util.TestSerializerUtil;
 import io.github.gregoryfeijon.serializer.provider.util.serialization.SerializationUtil;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -38,14 +39,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @author gregory.feijon
  */
+@SpringBootTest(classes = {
+        FactoryUtil.class,
+        TestSerializerConfiguration.class
+})
 @DisplayName("SerializationUtil Tests")
 class SerializationUtilTest {
-
-    @BeforeAll
-    static void setUp() {
-        // Configure SerializerProvider with Gson and Jackson
-        TestSerializerUtil.configureGsonAndJacksonAdapter();
-    }
 
     // =============== deserialize(byte[]) Tests ===============
 
