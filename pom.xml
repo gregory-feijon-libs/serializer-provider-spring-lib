@@ -5,7 +5,7 @@
 
     <groupId>io.github.gregoryfeijon</groupId>
     <artifactId>serializer-provider-spring-lib</artifactId>
-    <version>2.1.1</version>
+    <version>2.1.2</version>
     <name>serializer-provider-spring-lib</name>
     <description>A lightweight Java library that simplifies GSON and Jackson setup while providing an easy and flexible
         way to switch between them at runtime.
@@ -49,7 +49,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <spring-cloud.version>2025.0.0</spring-cloud.version>
+        <spring-cloud.version>2025.1.0</spring-cloud.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
@@ -64,6 +64,7 @@
         <sonar.projectKey>gregory-feijon-libs_serializer-provider-spring-lib</sonar.projectKey>
         <lombok.version>1.18.42</lombok.version>
         <spring.starter.version>3.5.8</spring.starter.version>
+        <jackson.libs.version>3.0.3</jackson.libs.version> <!--TODO: quando acabarem de realocar as demais libs, usar versão unica-->
     </properties>
 
     <profiles>
@@ -102,7 +103,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>6.2.14</version>
+            <version>6.2.15</version>
         </dependency>
 
         <dependency>
@@ -110,15 +111,16 @@
             <artifactId>spring-boot-starter-json</artifactId>
             <version>${spring.starter.version}</version>
         </dependency>
+
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.20.1</version>
+            <version>${jackson.libs.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.20.1</version>
+            <version>${jackson.libs.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -126,19 +128,21 @@
             <version>2.20</version>
         </dependency>
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.13.2</version>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
             <version>2.20.1</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.13.2</version>
+        </dependency>
+
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
-            <version>7.1.11.Final</version>
+            <version>7.2.0.Final</version>
             <scope>provided</scope>
         </dependency>
 
@@ -166,7 +170,7 @@
         <dependency>
             <groupId>io.github.gregoryfeijon</groupId>
             <artifactId>object-factory-commons-spring-lib</artifactId>
-            <version>1.0.3</version>
+            <version>1.0.4</version>
         </dependency>
     </dependencies>
 
