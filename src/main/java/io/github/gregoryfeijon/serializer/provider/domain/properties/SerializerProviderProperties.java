@@ -5,7 +5,6 @@ import io.github.gregoryfeijon.serializer.provider.util.serialization.adapter.Se
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 /**
  * Configuration properties for the SerializerProvider.
@@ -38,7 +37,6 @@ import org.springframework.stereotype.Component;
  */
 @Getter
 @Setter
-@Component
 @ConfigurationProperties("serializer-provider.main")
 public class SerializerProviderProperties {
 
