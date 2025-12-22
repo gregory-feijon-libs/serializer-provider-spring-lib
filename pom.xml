@@ -5,7 +5,7 @@
 
     <groupId>io.github.gregoryfeijon</groupId>
     <artifactId>serializer-provider-spring-lib</artifactId>
-    <version>2.1.2</version>
+    <version>2.1.3</version>
     <name>serializer-provider-spring-lib</name>
     <description>A lightweight Java library that simplifies GSON and Jackson setup while providing an easy and flexible
         way to switch between them at runtime.
@@ -49,7 +49,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <spring-cloud.version>2025.1.0</spring-cloud.version>
+        <spring-cloud.version>2025.0.0</spring-cloud.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
@@ -58,12 +58,10 @@
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
         <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
         <maven.resources.encoding>${project.build.sourceEncoding}</maven.resources.encoding>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <sonar.organization>gregory-feijon-libs</sonar.organization>
         <sonar.projectKey>gregory-feijon-libs_serializer-provider-spring-lib</sonar.projectKey>
         <lombok.version>1.18.42</lombok.version>
-        <spring.starter.version>3.5.8</spring.starter.version>
+        <spring.starter.version>3.5.9</spring.starter.version>
         <jackson.libs.version>3.0.3</jackson.libs.version> <!--TODO: quando acabarem de realocar as demais libs, usar versão unica-->
     </properties>
 
@@ -170,7 +168,7 @@
         <dependency>
             <groupId>io.github.gregoryfeijon</groupId>
             <artifactId>object-factory-commons-spring-lib</artifactId>
-            <version>1.0.4</version>
+            <version>1.0.5</version>
         </dependency>
     </dependencies>
 
