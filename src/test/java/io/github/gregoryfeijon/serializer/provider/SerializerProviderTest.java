@@ -1,5 +1,6 @@
 package io.github.gregoryfeijon.serializer.provider;
 
+import com.google.gson.Gson;
 import io.github.gregoryfeijon.object.factory.commons.utils.factory.FactoryUtil;
 import io.github.gregoryfeijon.serializer.provider.config.TestSerializerConfiguration;
 import io.github.gregoryfeijon.serializer.provider.domain.TestEntity;
@@ -80,6 +81,8 @@ class SerializerProviderTest {
         assertThat(SerializerProvider.getAdapter()).isNotNull();
         assertThat(SerializerProvider.getAdapter(SerializationType.GSON)).isNotNull();
         assertThat(SerializerProvider.getAdapter(SerializationType.JACKSON)).isNotNull();
+        assertThat(SerializerProvider.getGsonAdapter()).isNotNull();
+        assertThat(SerializerProvider.getJacksonAdapter()).isNotNull();
     }
 
     @Test
@@ -110,8 +113,8 @@ class SerializerProviderTest {
     void shouldUseGsonAsDefaultByConvention() {
         // When
         SerializerProvider.initializeIfEmpty();
-        SerializerAdapter defaultGson = SerializerProvider.getAdapter(SerializationType.GSON);
-        SerializerAdapter namedGson = SerializerProvider.getAdapter(SerializationType.GSON, "testGson");
+        SerializerAdapter<?> defaultGson = SerializerProvider.getAdapter(SerializationType.GSON);
+        SerializerAdapter<?> namedGson = SerializerProvider.getAdapter(SerializationType.GSON, "testGson");
 
         // Then
         assertThat(defaultGson).isSameAs(namedGson);
@@ -122,8 +125,8 @@ class SerializerProviderTest {
     void shouldRetrieveAdapterByTypeAndName() {
         // When
         SerializerProvider.initializeIfEmpty();
-        SerializerAdapter utcAdapter = SerializerProvider.getAdapter(SerializationType.GSON, "gsonUtc");
-        SerializerAdapter brAdapter = SerializerProvider.getAdapter(SerializationType.GSON, "gsonBrasilia");
+        SerializerAdapter<?> utcAdapter = SerializerProvider.getAdapter(SerializationType.GSON, "gsonUtc");
+        SerializerAdapter<?> brAdapter = SerializerProvider.getAdapter(SerializationType.GSON, "gsonBrasilia");
 
         // Then
         assertThat(utcAdapter).isNotNull();
@@ -147,7 +150,7 @@ class SerializerProviderTest {
     void shouldSerializeAndDeserializeCorrectly() {
         // Given
         SerializerProvider.initializeIfEmpty();
-        SerializerAdapter adapter = SerializerProvider.getAdapter(SerializationType.GSON);
+        SerializerAdapter<?> adapter = SerializerProvider.getAdapter(SerializationType.GSON);
         TestEntity original = new TestEntity("test", 42);
 
         // When
@@ -221,10 +224,10 @@ class SerializerProviderTest {
     void shouldInitializeOnlyOnce() {
         // When
         SerializerProvider.initializeIfEmpty();
-        SerializerAdapter first = SerializerProvider.getAdapter();
+        SerializerAdapter<?> first = SerializerProvider.getAdapter();
 
         SerializerProvider.initializeIfEmpty();
-        SerializerAdapter second = SerializerProvider.getAdapter();
+        SerializerAdapter<?> second = SerializerProvider.getAdapter();
 
         // Then
         assertThat(first).isSameAs(second);
@@ -235,10 +238,12 @@ class SerializerProviderTest {
     void shouldUseGsonAsGlobalDefault() {
         // When
         SerializerProvider.initializeIfEmpty();
-        SerializerAdapter defaultAdapter = SerializerProvider.getAdapter();
-        SerializerAdapter gsonAdapter = SerializerProvider.getAdapter(SerializationType.GSON);
+        SerializerAdapter<?> defaultAdapter = SerializerProvider.getAdapter();
+        SerializerAdapter<?> gsonAdapter = SerializerProvider.getAdapter(SerializationType.GSON);
+        SerializerAdapter<Gson> gsonAdapter2 = SerializerProvider.getGsonAdapter();
 
         // Then
         assertThat(defaultAdapter).isSameAs(gsonAdapter);
+        assertThat(defaultAdapter).isSameAs(gsonAdapter2);
     }
 }

@@ -11,7 +11,7 @@ import java.lang.reflect.Type;
  *
  * @author gregory.feijon
  */
-public non-sealed class GsonAdapter implements SerializerAdapter {
+public non-sealed class GsonAdapter implements SerializerAdapter<Gson> {
 
     private final Gson gson;
 
@@ -54,5 +54,10 @@ public non-sealed class GsonAdapter implements SerializerAdapter {
     @Override
     public <T> T deserialize(String json, Type type) {
         return gson.fromJson(json, type);
+    }
+
+    @Override
+    public Gson getSerializerObject() {
+        return null;
     }
 }

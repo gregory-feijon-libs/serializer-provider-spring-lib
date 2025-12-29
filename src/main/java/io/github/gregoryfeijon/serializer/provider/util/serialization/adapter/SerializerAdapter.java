@@ -10,7 +10,7 @@ import java.lang.reflect.Type;
  *
  * @author gregory.feijon
  */
-public sealed interface SerializerAdapter permits GsonAdapter, JacksonAdapter {
+public sealed interface SerializerAdapter<S> permits GsonAdapter, JacksonAdapter {
 
     /**
      * Serializes an object to a JSON string.
@@ -54,4 +54,6 @@ public sealed interface SerializerAdapter permits GsonAdapter, JacksonAdapter {
      * @return The deserialized object
      */
     <T> T deserialize(String json, Type type);
+
+    S getSerializerObject();
 }

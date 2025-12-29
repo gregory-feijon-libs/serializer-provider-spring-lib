@@ -87,7 +87,7 @@ public final class SerializerProvider {
      * This map stores one adapter per {@link SerializationType}, representing
      * the default configuration for that type.
      */
-    private static final Map<SerializationType, SerializerAdapter> DEFAULT_ADAPTERS = new EnumMap<>(SerializationType.class);
+    private static final Map<SerializationType, SerializerAdapter<?>> DEFAULT_ADAPTERS = new EnumMap<>(SerializationType.class);
 
     /**
      * Map holding all registered adapters organized by type and bean name.
@@ -97,7 +97,7 @@ public final class SerializerProvider {
      * This allows multiple configurations of the same serialization type to coexist,
      * identified by their Spring bean names.
      */
-    private static final Map<SerializationType, Map<String, SerializerAdapter>> QUALIFIED_ADAPTERS = new EnumMap<>(SerializationType.class);
+    private static final Map<SerializationType, Map<String, SerializerAdapter<?>>> QUALIFIED_ADAPTERS = new EnumMap<>(SerializationType.class);
 
     /**
      * The default serialization type to use when no specific type is requested.
@@ -306,7 +306,7 @@ public final class SerializerProvider {
      * @param beanName The Spring bean name used as identifier
      * @param adapter  The serializer adapter instance to register
      */
-    private static void registerAdapter(SerializationType type, String beanName, SerializerAdapter adapter) {
+    private static void registerAdapter(SerializationType type, String beanName, SerializerAdapter<?> adapter) {
         QUALIFIED_ADAPTERS.computeIfAbsent(type, k -> new ConcurrentHashMap<>())
                 .put(beanName, adapter);
         log.debug("Registered {} adapter: '{}'", type, beanName);
@@ -323,7 +323,7 @@ public final class SerializerProvider {
      * @throws IllegalStateException If no adapter is found with the specified type and name
      */
     private static void setDefaultAdapter(SerializationType type, String beanName) {
-        Map<String, SerializerAdapter> adaptersForType = QUALIFIED_ADAPTERS.get(type);
+        Map<String, SerializerAdapter<?>> adaptersForType = QUALIFIED_ADAPTERS.get(type);
         if (adaptersForType == null || !adaptersForType.containsKey(beanName)) {
             throw new IllegalStateException(
                     String.format("Cannot set default: no adapter found for type '%s' with name '%s'", type, beanName)
@@ -347,7 +347,7 @@ public final class SerializerProvider {
     private static void logInitializationSummary() {
         log.info("SerializerProvider initialized:");
         QUALIFIED_ADAPTERS.forEach((type, adapters) -> {
-            SerializerAdapter defaultAdapter = DEFAULT_ADAPTERS.get(type);
+            SerializerAdapter<?> defaultAdapter = DEFAULT_ADAPTERS.get(type);
             String defaultName = adapters.entrySet().stream()
                     .filter(e -> e.getValue() == defaultAdapter)
                     .map(Map.Entry::getKey)
@@ -409,12 +409,17 @@ public final class SerializerProvider {
      * <pre>{@code
      * SerializerAdapter adapter = SerializerProvider.getAdapter();
      * String json = adapter.serialize(myObject);
+     *
+     * // For accessing specific serializer object, use typed methods:
+     * Gson gson = SerializerProvider.getGsonAdapter().getSerializerObject();
+     * ObjectMapper mapper = SerializerProvider.getJacksonAdapter().getSerializerObject();
      * }</pre>
      *
-     * @return The default serializer adapter
+     * @return The default serializer adapter (raw type)
      * @throws IllegalStateException If no default adapter is found (should never happen
      *                               after successful initialization)
      */
+    @SuppressWarnings("rawtypes")
     public static SerializerAdapter getAdapter() {
         if (DEFAULT_ADAPTERS.isEmpty()) {
             initializeIfEmpty();
@@ -423,10 +428,59 @@ public final class SerializerProvider {
     }
 
     /**
-     * Gets the default serializer adapter for a specific serialization type.
+     * Gets the default Gson adapter with full type information.
+     * <p>
+     * This method provides type-safe access to the Gson adapter, allowing direct
+     * access to the underlying Gson instance without casting.
+     * <p>
+     * <b>Example:</b>
+     * <pre>{@code
+     * SerializerAdapter<Gson> adapter = SerializerProvider.getGsonAdapter();
+     * Gson gson = adapter.getSerializerObject(); // Type-safe!
+     * }</pre>
+     *
+     * @return The default Gson adapter
+     * @throws IllegalStateException If no Gson adapter is configured or if the default
+     *                               adapter is not a Gson adapter
+     */
+    public static SerializerAdapter<Gson> getGsonAdapter() {
+        if (DEFAULT_ADAPTERS.isEmpty()) {
+            initializeIfEmpty();
+        }
+        return getTypedAdapter(SerializationType.GSON);
+    }
+
+    /**
+     * Gets the default Jackson adapter with full type information.
+     * <p>
+     * This method provides type-safe access to the Jackson adapter, allowing direct
+     * access to the underlying ObjectMapper instance without casting.
+     * <p>
+     * <b>Example:</b>
+     * <pre>{@code
+     * SerializerAdapter<ObjectMapper> adapter = SerializerProvider.getJacksonAdapter();
+     * ObjectMapper mapper = adapter.getSerializerObject(); // Type-safe!
+     * }</pre>
+     *
+     * @return The default Jackson adapter
+     * @throws IllegalStateException If no Jackson adapter is configured or if the default
+     *                               adapter is not a Jackson adapter
+     */
+    public static SerializerAdapter<ObjectMapper> getJacksonAdapter() {
+        if (DEFAULT_ADAPTERS.isEmpty()) {
+            initializeIfEmpty();
+        }
+        return getTypedAdapter(SerializationType.JACKSON);
+    }
+
+    /**
+     * Gets the default serializer adapter for a specific serialization type (raw type).
      * <p>
      * This method returns the default adapter for the specified type. The default
      * is selected based on bean naming conventions during initialization.
+     * <p>
+     * <b>Note:</b> For type-safe access to the serializer object, use
+     * {@link #getGsonAdapter()} or {@link #getJacksonAdapter()} instead.
      * <p>
      * If the provider hasn't been initialized yet, this method triggers
      * automatic initialization.
@@ -441,9 +495,10 @@ public final class SerializerProvider {
      * }</pre>
      *
      * @param type The serialization type (GSON or JACKSON), must not be null
-     * @return The default adapter for the specified type
-     * @throws IllegalStateException    If no adapter is found for the specified type
+     * @return The default adapter for the specified type (raw type)
+     * @throws IllegalStateException If no adapter is found for the specified type
      */
+    @SuppressWarnings("rawtypes")
     public static SerializerAdapter getAdapter(SerializationType type) {
         if (DEFAULT_ADAPTERS.isEmpty()) {
             initializeIfEmpty();
@@ -452,21 +507,47 @@ public final class SerializerProvider {
     }
 
     /**
-     * Retrieves a serializer adapter from the default adapters map.
+     * Gets a typed adapter for a specific serialization type.
+     * <p>
+     * This is a helper method that performs an unchecked cast to provide
+     * type-safe access to the adapter. The cast is safe because we control
+     * the registration process and ensure type consistency.
+     *
+     * @param <S>  The serializer type (Gson or ObjectMapper)
+     * @param type The serialization type
+     * @return The typed adapter
+     */
+    @SuppressWarnings("unchecked")
+    private static <S> SerializerAdapter<S> getTypedAdapter(SerializationType type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Serialization type cannot be null");
+        }
+        SerializerAdapter<?> adapter = DEFAULT_ADAPTERS.get(type);
+        if (adapter == null) {
+            throw new IllegalStateException(
+                    String.format("No adapter found for type '%s'", type)
+            );
+        }
+        return (SerializerAdapter<S>) adapter;
+    }
+
+    /**
+     * Retrieves a serializer adapter from the default adapters map (raw type).
      * <p>
      * This is a helper method that encapsulates the common logic of retrieving
      * an adapter from the DEFAULT_ADAPTERS map with proper null checking.
      *
      * @param type The serialization type to look up
-     * @return The serializer adapter for the specified type
+     * @return The serializer adapter for the specified type (raw type)
      * @throws IllegalArgumentException If type is null
-     * @throws IllegalStateException If no adapter is found for the specified type
+     * @throws IllegalStateException    If no adapter is found for the specified type
      */
+    @SuppressWarnings("rawtypes")
     private static SerializerAdapter getDefaultAdapter(SerializationType type) {
         if (type == null) {
             throw new IllegalArgumentException("Serialization type cannot be null");
         }
-        SerializerAdapter adapter = DEFAULT_ADAPTERS.get(type);
+        SerializerAdapter<?> adapter = DEFAULT_ADAPTERS.get(type);
         if (adapter == null) {
             throw new IllegalStateException(
                     String.format("No adapter found for type '%s'", type)
@@ -476,42 +557,39 @@ public final class SerializerProvider {
     }
 
     /**
-     * Gets a specific serializer adapter by type and bean name.
+     * Gets a specific serializer adapter by type and bean name (raw type).
      * <p>
      * This method allows access to any registered adapter configuration by its
      * Spring bean name. This is useful when you need different serialization
      * configurations for different use cases (e.g., different timezone settings,
      * different formatting rules).
      * <p>
+     * <b>Note:</b> This method returns a raw type. For type-safe access, use
+     * {@link #getGsonAdapter(String)} or {@link #getJacksonAdapter(String)} instead.
+     * <p>
      * If the provider hasn't been initialized yet, this method triggers
      * automatic initialization.
      * <p>
      * <b>Example:</b>
      * <pre>{@code
-     * // Get UTC-configured Gson
+     * // Get UTC-configured Gson (raw type)
      * SerializerAdapter utcAdapter = SerializerProvider.getAdapter(
      *     SerializationType.GSON,
      *     "gsonUtc"
      * );
      *
-     * // Get Brasilia-configured Gson
-     * SerializerAdapter brAdapter = SerializerProvider.getAdapter(
-     *     SerializationType.GSON,
-     *     "gsonBrasilia"
-     * );
-     *
-     * // Use them for different purposes
+     * // Use them for serialization
      * String utcJson = utcAdapter.serialize(webhookData);
-     * String localJson = brAdapter.serialize(internalData);
      * }</pre>
      *
      * @param type     The serialization type (GSON or JACKSON), must not be null
      * @param beanName The Spring bean name of the desired adapter configuration, must not be null or blank
-     * @return The serializer adapter registered with the specified name
+     * @return The serializer adapter registered with the specified name (raw type)
      * @throws IllegalArgumentException If type or beanName is null or blank
      * @throws IllegalStateException    If no adapter is found with the specified type and name.
      *                                  The exception message includes a list of available bean names.
      */
+    @SuppressWarnings("rawtypes")
     public static SerializerAdapter getAdapter(SerializationType type, String beanName) {
         validatedParams(type, beanName);
         if (QUALIFIED_ADAPTERS.isEmpty()) {
@@ -522,16 +600,69 @@ public final class SerializerProvider {
     }
 
     /**
-     * Retrieves a specific serializer adapter by type and bean name.
+     * Gets a specific Gson adapter by bean name with full type information.
+     * <p>
+     * This method provides type-safe access to a named Gson adapter configuration.
+     * <p>
+     * <b>Example:</b>
+     * <pre>{@code
+     * SerializerAdapter<Gson> utcAdapter = SerializerProvider.getGsonAdapter("gsonUtc");
+     * Gson gson = utcAdapter.getSerializerObject(); // Type-safe!
+     * }</pre>
+     *
+     * @param beanName The Spring bean name of the desired Gson adapter
+     * @return The Gson adapter with the specified name
+     * @throws IllegalArgumentException If beanName is null or blank
+     * @throws IllegalStateException    If no Gson adapter is found with the specified name
+     */
+    public static SerializerAdapter<Gson> getGsonAdapter(String beanName) {
+        if (!StringUtils.hasText(beanName)) {
+            throw new IllegalArgumentException("Bean name cannot be null or blank");
+        }
+        if (QUALIFIED_ADAPTERS.isEmpty()) {
+            initializeIfEmpty();
+        }
+        return getTypedSerializerAdapter(SerializationType.GSON, beanName);
+    }
+
+    /**
+     * Gets a specific Jackson adapter by bean name with full type information.
+     * <p>
+     * This method provides type-safe access to a named Jackson adapter configuration.
+     * <p>
+     * <b>Example:</b>
+     * <pre>{@code
+     * SerializerAdapter<ObjectMapper> customAdapter = SerializerProvider.getJacksonAdapter("customObjectMapper");
+     * ObjectMapper mapper = customAdapter.getSerializerObject(); // Type-safe!
+     * }</pre>
+     *
+     * @param beanName The Spring bean name of the desired Jackson adapter
+     * @return The Jackson adapter with the specified name
+     * @throws IllegalArgumentException If beanName is null or blank
+     * @throws IllegalStateException    If no Jackson adapter is found with the specified name
+     */
+    public static SerializerAdapter<ObjectMapper> getJacksonAdapter(String beanName) {
+        if (!StringUtils.hasText(beanName)) {
+            throw new IllegalArgumentException("Bean name cannot be null or blank");
+        }
+        if (QUALIFIED_ADAPTERS.isEmpty()) {
+            initializeIfEmpty();
+        }
+        return getTypedSerializerAdapter(SerializationType.JACKSON, beanName);
+    }
+
+    /**
+     * Retrieves a specific serializer adapter by type and bean name (raw type).
      *
      * @param type     The serialization type
      * @param beanName The bean name
-     * @return The serializer adapter
+     * @return The serializer adapter (raw type)
      * @throws IllegalStateException If no adapter is found with the specified parameters
      */
+    @SuppressWarnings("rawtypes")
     private static SerializerAdapter getSerializerAdapter(SerializationType type, String beanName) {
-        Map<String, SerializerAdapter> adaptersForType = getMappedQualifiedAdapters(type);
-        SerializerAdapter adapter = adaptersForType.get(beanName);
+        Map<String, SerializerAdapter<?>> adaptersForType = getMappedQualifiedAdapters(type);
+        SerializerAdapter<?> adapter = adaptersForType.get(beanName);
         if (adapter == null) {
             throw new IllegalStateException(
                     String.format("No adapter found for type '%s' with bean name '%s'. Available: %s",
@@ -542,14 +673,36 @@ public final class SerializerProvider {
     }
 
     /**
+     * Retrieves a typed serializer adapter by type and bean name.
+     *
+     * @param <S>      The serializer type (Gson or ObjectMapper)
+     * @param type     The serialization type
+     * @param beanName The bean name
+     * @return The typed serializer adapter
+     * @throws IllegalStateException If no adapter is found with the specified parameters
+     */
+    @SuppressWarnings("unchecked")
+    private static <S> SerializerAdapter<S> getTypedSerializerAdapter(SerializationType type, String beanName) {
+        Map<String, SerializerAdapter<?>> adaptersForType = getMappedQualifiedAdapters(type);
+        SerializerAdapter<?> adapter = adaptersForType.get(beanName);
+        if (adapter == null) {
+            throw new IllegalStateException(
+                    String.format("No adapter found for type '%s' with bean name '%s'. Available: %s",
+                            type, beanName, adaptersForType.keySet())
+            );
+        }
+        return (SerializerAdapter<S>) adapter;
+    }
+
+    /**
      * Retrieves the map of qualified adapters for a specific type.
      *
      * @param type The serialization type
      * @return Map of bean names to adapters for the specified type
      * @throws IllegalStateException If no adapters are registered for the type
      */
-    private static Map<String, SerializerAdapter> getMappedQualifiedAdapters(SerializationType type) {
-        Map<String, SerializerAdapter> adaptersForType = QUALIFIED_ADAPTERS.get(type);
+    private static Map<String, SerializerAdapter<?>> getMappedQualifiedAdapters(SerializationType type) {
+        Map<String, SerializerAdapter<?>> adaptersForType = QUALIFIED_ADAPTERS.get(type);
         if (adaptersForType == null) {
             throw new IllegalStateException(
                     String.format("No adapters registered for type '%s'", type)
@@ -603,7 +756,7 @@ public final class SerializerProvider {
         if (QUALIFIED_ADAPTERS.isEmpty()) {
             initializeIfEmpty();
         }
-        Map<String, SerializerAdapter> adaptersForType = QUALIFIED_ADAPTERS.get(type);
+        Map<String, SerializerAdapter<?>> adaptersForType = QUALIFIED_ADAPTERS.get(type);
         return adaptersForType != null ? Set.copyOf(adaptersForType.keySet()) : Set.of();
     }
 
@@ -637,7 +790,7 @@ public final class SerializerProvider {
         if (QUALIFIED_ADAPTERS.isEmpty()) {
             initializeIfEmpty();
         }
-        Map<String, SerializerAdapter> adaptersForType = QUALIFIED_ADAPTERS.get(type);
+        Map<String, SerializerAdapter<?>> adaptersForType = QUALIFIED_ADAPTERS.get(type);
         return adaptersForType != null && adaptersForType.containsKey(beanName);
     }
 
@@ -662,10 +815,9 @@ public final class SerializerProvider {
      *         @Qualifier("gson") Gson gson,
      *         ObjectMapper objectMapper) {
      *
-     *     Map<SerializationType, SerializerAdapter> adapters = new EnumMap<>(Map.of(
-     *         SerializationType.GSON, new GsonAdapter(gson),
-     *         SerializationType.JACKSON, new JacksonAdapter(objectMapper)
-     *     ));
+     *     Map<SerializationType, SerializerAdapter<?>> adapters = new EnumMap<>(SerializationType.class);
+     *     adapters.put(SerializationType.GSON, new GsonAdapter(gson));
+     *     adapters.put(SerializationType.JACKSON, new JacksonAdapter(objectMapper));
      *
      *     SerializerProvider.initialize(adapters, SerializationType.GSON);
      *     return SerializerProvider.getAdapter();
@@ -675,11 +827,13 @@ public final class SerializerProvider {
      * @param adapters    A map of serialization types to their corresponding adapters
      * @param defaultType The default serialization type to use
      */
-    public static void initialize(Map<SerializationType, SerializerAdapter> adapters, SerializationType defaultType) {
+    public static void initialize(Map<SerializationType, SerializerAdapter<?>> adapters, SerializationType defaultType) {
         if (DEFAULT_ADAPTERS.isEmpty()) {
-            DEFAULT_ADAPTERS.putAll(adapters);
+            adapters.forEach((type, adapter) -> {
+                DEFAULT_ADAPTERS.put(type, adapter);
+                registerAdapter(type, "default", adapter);
+            });
             SerializerProvider.defaultType = defaultType;
-            adapters.forEach((type, adapter) -> registerAdapter(type, "default", adapter));
             log.info("SerializerProvider initialized (legacy). Default type: {}", defaultType);
         }
     }

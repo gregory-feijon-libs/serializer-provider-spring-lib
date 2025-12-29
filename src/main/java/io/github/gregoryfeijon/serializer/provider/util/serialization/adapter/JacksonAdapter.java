@@ -15,7 +15,7 @@ import java.lang.reflect.Type;
  *
  * @author gregory.feijon
  */
-public non-sealed class JacksonAdapter implements SerializerAdapter {
+public non-sealed class JacksonAdapter implements SerializerAdapter<ObjectMapper> {
 
     private final ObjectMapper mapper;
 
@@ -83,5 +83,10 @@ public non-sealed class JacksonAdapter implements SerializerAdapter {
         } catch (JsonProcessingException e) {
             throw new SerializationFailedException("Error while trying to deserialize object with specific type!", e);
         }
+    }
+
+    @Override
+    public ObjectMapper getSerializerObject() {
+        return this.mapper;
     }
 }
