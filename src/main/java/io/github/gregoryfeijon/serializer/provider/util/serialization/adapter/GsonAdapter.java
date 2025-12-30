@@ -1,6 +1,8 @@
 package io.github.gregoryfeijon.serializer.provider.util.serialization.adapter;
 
 import com.google.gson.Gson;
+import io.github.gregoryfeijon.serializer.provider.domain.enums.SerializationType;
+import lombok.Getter;
 
 import java.lang.reflect.Type;
 
@@ -11,8 +13,9 @@ import java.lang.reflect.Type;
  *
  * @author gregory.feijon
  */
-public non-sealed class GsonAdapter implements SerializerAdapter<Gson> {
+public non-sealed class GsonAdapter implements SerializerAdapter {
 
+    @Getter
     private final Gson gson;
 
     /**
@@ -57,7 +60,7 @@ public non-sealed class GsonAdapter implements SerializerAdapter<Gson> {
     }
 
     @Override
-    public Gson getSerializerObject() {
-        return null;
+    public SerializationType getType() {
+        return SerializationType.GSON;
     }
 }

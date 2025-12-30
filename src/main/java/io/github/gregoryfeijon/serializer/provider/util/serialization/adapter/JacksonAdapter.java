@@ -3,7 +3,9 @@ package io.github.gregoryfeijon.serializer.provider.util.serialization.adapter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gregoryfeijon.serializer.provider.domain.enums.SerializationType;
 import io.github.gregoryfeijon.serializer.provider.exception.ApiException;
+import lombok.Getter;
 import org.springframework.core.serializer.support.SerializationFailedException;
 
 import java.lang.reflect.Type;
@@ -15,8 +17,9 @@ import java.lang.reflect.Type;
  *
  * @author gregory.feijon
  */
-public non-sealed class JacksonAdapter implements SerializerAdapter<ObjectMapper> {
+public non-sealed class JacksonAdapter implements SerializerAdapter {
 
+    @Getter
     private final ObjectMapper mapper;
 
     /**
@@ -86,7 +89,7 @@ public non-sealed class JacksonAdapter implements SerializerAdapter<ObjectMapper
     }
 
     @Override
-    public ObjectMapper getSerializerObject() {
-        return this.mapper;
+    public SerializationType getType() {
+        return SerializationType.JACKSON;
     }
 }
