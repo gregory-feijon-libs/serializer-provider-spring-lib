@@ -83,7 +83,7 @@ public class JacksonCustomizationAutoConfiguration {
         log.info("Registering Jackson customizations");
 
         return builder -> {
-            builder.modules(enumCustomizationModule);
+            builder.modulesToInstall(enumCustomizationModule);
             builder.annotationIntrospector(new JsonExcludeIntrospector());
             log.info("Jackson customizations successfully applied");
         };
