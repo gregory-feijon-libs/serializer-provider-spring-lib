@@ -1,5 +1,7 @@
 package io.github.gregoryfeijon.serializer.provider.util.serialization.adapter;
 
+import io.github.gregoryfeijon.serializer.provider.domain.enums.SerializationType;
+
 import java.lang.reflect.Type;
 
 /**
@@ -10,7 +12,7 @@ import java.lang.reflect.Type;
  *
  * @author gregory.feijon
  */
-public sealed interface SerializerAdapter<S> permits GsonAdapter, JacksonAdapter {
+public sealed interface SerializerAdapter permits GsonAdapter, JacksonAdapter {
 
     /**
      * Serializes an object to a JSON string.
@@ -27,7 +29,7 @@ public sealed interface SerializerAdapter<S> permits GsonAdapter, JacksonAdapter
      * where type information needs to be explicitly provided.
      *
      * @param object The object to serialize
-     * @param type The specific type to use for serialization
+     * @param type   The specific type to use for serialization
      * @return The JSON string representation of the object
      */
     String serialize(Object object, Type type);
@@ -35,7 +37,7 @@ public sealed interface SerializerAdapter<S> permits GsonAdapter, JacksonAdapter
     /**
      * Deserializes a JSON string to an object of the specified class.
      *
-     * @param <T> The type to deserialize to
+     * @param <T>  The type to deserialize to
      * @param json The JSON string to deserialize
      * @param type The class of the target object
      * @return The deserialized object
@@ -48,12 +50,17 @@ public sealed interface SerializerAdapter<S> permits GsonAdapter, JacksonAdapter
      * This method is useful for deserializing objects with generic types
      * where type information needs to be explicitly provided.
      *
-     * @param <T> The type to deserialize to
+     * @param <T>  The type to deserialize to
      * @param json The JSON string to deserialize
      * @param type The specific type to use for deserialization
      * @return The deserialized object
      */
     <T> T deserialize(String json, Type type);
 
-    S getSerializerObject();
+    /**
+     * Gets the serialization type of this adapter.
+     *
+     * @return The serialization type (GSON or JACKSON)
+     */
+    SerializationType getType();
 }
