@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         FactoryUtil.class,
         TestSerializerConfiguration.class
 })
-class SerializerProviderSerializerObjectTest {
+class SerializerProviderTest {
 
     @AfterEach
     void resetProvider() throws Exception {
