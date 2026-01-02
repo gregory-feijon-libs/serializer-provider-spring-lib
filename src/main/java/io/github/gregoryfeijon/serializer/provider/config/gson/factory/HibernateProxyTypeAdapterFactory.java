@@ -5,6 +5,7 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
 import io.github.gregoryfeijon.serializer.provider.config.gson.adapter.HibernateProxyTypeAdapter;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.proxy.HibernateProxy;
 import org.springframework.stereotype.Component;
 
@@ -22,13 +23,28 @@ import org.springframework.stereotype.Component;
  * @see HibernateProxy
  * @see HibernateProxyTypeAdapter
  */
+@Slf4j
 @Component
 public class HibernateProxyTypeAdapterFactory implements TypeAdapterFactory {
+
+    private static final Class<?> HIBERNATE_PROXY_CLASS;
+
+    static {
+        Class<?> proxyClass = null;
+        try {
+            proxyClass = Class.forName("org.hibernate.proxy.HibernateProxy");
+            log.debug("Hibernate detected in classpath - HibernateProxy support enabled");
+        } catch (ClassNotFoundException e) {
+            log.debug("Hibernate not found in classpath - HibernateProxy support disabled");
+        }
+        HIBERNATE_PROXY_CLASS = proxyClass;
+    }
 
     /**
      * Creates a type adapter for the specified type.
      * <p>
-     * If the type is assignable from HibernateProxy, returns a {@link HibernateProxyTypeAdapter}.
+     * If Hibernate is available and the type is assignable from HibernateProxy,
+     * returns a {@link HibernateProxyTypeAdapter}.
      * Otherwise, returns null to let Gson use its default adapter.
      *
      * @param gson The Gson instance
@@ -38,10 +54,17 @@ public class HibernateProxyTypeAdapterFactory implements TypeAdapterFactory {
      */
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+        if (HIBERNATE_PROXY_CLASS == null) {
+            return null;
+        }
+
         Class<? super T> rawType = type.getRawType();
-        if (HibernateProxy.class.isAssignableFrom(rawType)) {
+
+        if (HIBERNATE_PROXY_CLASS.isAssignableFrom(rawType)) {
+            log.trace("Creating HibernateProxyTypeAdapter for type: {}", rawType.getSimpleName());
             return new HibernateProxyTypeAdapter<>(gson);
         }
+
         return null;
     }
 }
