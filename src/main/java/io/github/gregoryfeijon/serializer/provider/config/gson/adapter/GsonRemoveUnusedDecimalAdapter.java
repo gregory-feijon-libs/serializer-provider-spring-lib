@@ -1,10 +1,12 @@
 package io.github.gregoryfeijon.serializer.provider.config.gson.adapter;
 
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.TypeAdapter;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -56,7 +58,7 @@ public class GsonRemoveUnusedDecimalAdapter<T> extends TypeAdapter<T> {
      * If the number has no decimal part (e.g., 10.0), it will be written as an integer (10).
      *
      * @param jsonWriter The JSON writer
-     * @param value The number value to write
+     * @param value      The number value to write
      * @throws IOException If an I/O error occurs
      */
     @Override
@@ -86,14 +88,41 @@ public class GsonRemoveUnusedDecimalAdapter<T> extends TypeAdapter<T> {
     @Override
     public T read(JsonReader jsonReader) throws IOException {
         JsonToken token = jsonReader.peek();
-        if (token == JsonToken.NULL) {
-            jsonReader.nextNull();
+
+        return switch (token) {
+            case NULL -> {
+                jsonReader.nextNull();
+                yield null;
+            }
+            case NUMBER -> parseNumber(jsonReader.nextString());
+            case STRING -> parseStringAsNumber(jsonReader.nextString());
+            default -> throw new IOException("Expected a number but found: " + token);
+        };
+    }
+
+    /**
+     * Parses a numeric string value to the appropriate Number type.
+     */
+    private T parseNumber(String value) {
+        return createNumber(new BigDecimal(value));
+    }
+
+    /**
+     * Parses a string value as a number, handling empty strings.
+     */
+    private T parseStringAsNumber(String stringValue) {
+        if (!StringUtils.hasText(stringValue)) {
             return null;
-        } else if (token == JsonToken.NUMBER) {
-            String value = jsonReader.nextString();
-            return createNumber(new BigDecimal(value));
         }
-        throw new IOException("Expected a number but found: " + token);
+
+        try {
+            return createNumber(new BigDecimal(stringValue));
+        } catch (NumberFormatException e) {
+            throw new JsonSyntaxException(
+                    "Expected number but got: '" + stringValue + "'",
+                    e
+            );
+        }
     }
 
     /**
