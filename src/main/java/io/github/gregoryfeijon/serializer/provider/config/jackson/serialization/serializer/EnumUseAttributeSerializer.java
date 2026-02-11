@@ -70,9 +70,7 @@ public class EnumUseAttributeSerializer extends JsonSerializer<Enum<?>> implemen
             return;
         }
 
-        Class<? extends Enum<?>> targetEnumType = enumType != null
-                ? enumType
-                : (Class<? extends Enum<?>>) value.getClass();
+        Class<? extends Enum<?>> targetEnumType = resolveEnumType(value);
 
         EnumUseAttributeInMarshalling use = getEnumUseAttributeInMarshallingAnnotation(value, targetEnumType);
         String attr = Optional.ofNullable(use)
@@ -86,6 +84,22 @@ public class EnumUseAttributeSerializer extends JsonSerializer<Enum<?>> implemen
         } else {
             gen.writeString(value.name());
         }
+    }
+
+    /**
+     * Resolves the target enum type for serialization.
+     * <p>
+     * Uses the contextualized enum type if available, otherwise falls back
+     * to the runtime class of the value.
+     *
+     * @param value The enum value being serialized
+     * @return The resolved enum class
+     */
+    @SuppressWarnings("unchecked") // Safe: value is Enum<?>, so value.getClass() is always a Class<? extends Enum<?>>
+    private Class<? extends Enum<?>> resolveEnumType(Enum<?> value) {
+        return enumType != null
+                ? enumType
+                : (Class<? extends Enum<?>>) value.getClass();
     }
 
     /**
@@ -112,7 +126,9 @@ public class EnumUseAttributeSerializer extends JsonSerializer<Enum<?>> implemen
         Class<?> raw = type.getRawClass();
 
         if (raw != null && raw.isEnum()) {
-            return new EnumUseAttributeSerializer((Class<? extends Enum<?>>) raw);
+            @SuppressWarnings("unchecked") // Safe: raw.isEnum() validates the type before cast
+            var rawEnumType = (Class<? extends Enum<?>>) raw;
+            return new EnumUseAttributeSerializer(rawEnumType);
         }
 
         return prov.findValueSerializer(type);

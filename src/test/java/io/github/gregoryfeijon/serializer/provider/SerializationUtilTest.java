@@ -8,6 +8,7 @@ import io.github.gregoryfeijon.serializer.provider.domain.TestSerializableEntity
 import io.github.gregoryfeijon.serializer.provider.exception.ApiException;
 import io.github.gregoryfeijon.serializer.provider.util.serialization.SerializationUtil;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -15,15 +16,20 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.ByteArrayOutputStream;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static io.github.gregoryfeijon.serializer.provider.util.serialization.SerializationUtil.deserialize;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -59,21 +65,83 @@ class SerializationUtilTest {
     }
 
     @Test
-    @DisplayName("Should deserialize byte array to object successfully")
-    void shouldDeserializeByteArrayToObjectSuccessfully() {
-        // Arrange
-        TestSerializableEntity entity = new TestSerializableEntity("test", 123);
-        byte[] serialized = SerializationUtil.serializeObjectAsByte(entity);
+    @DisplayName("Should deserialize simple types successfully (String)")
+    void shouldDeserializeSimpleTypesSuccessfully() {
+        // Arrange - String is a simple/wrapper type, allowed by security filter
+        String original = "test string value";
+        byte[] serialized = SerializationUtil.serializeObjectAsByte(original);
 
         // Act
         Object result = deserialize(serialized);
 
         // Assert
         assertNotNull(result, "Result should not be null");
-        assertInstanceOf(TestSerializableEntity.class, result, "Result should be TestSerializableEntity");
-        TestSerializableEntity deserialized = (TestSerializableEntity) result;
-        assertEquals("test", deserialized.getName());
-        assertEquals(123, deserialized.getValue());
+        assertInstanceOf(String.class, result);
+        assertEquals(original, result);
+    }
+
+    @Test
+    @DisplayName("Should deserialize Integer wrapper successfully")
+    void shouldDeserializeIntegerWrapperSuccessfully() {
+        // Arrange
+        Integer original = 42;
+        byte[] serialized = SerializationUtil.serializeObjectAsByte(original);
+
+        // Act
+        Object result = deserialize(serialized);
+
+        // Assert
+        assertNotNull(result);
+        assertInstanceOf(Integer.class, result);
+        assertEquals(original, result);
+    }
+
+    @Test
+    @DisplayName("Should deserialize UUID successfully")
+    void shouldDeserializeUuidSuccessfully() {
+        // Arrange
+        UUID original = UUID.randomUUID();
+        byte[] serialized = SerializationUtil.serializeObjectAsByte(original);
+
+        // Act
+        Object result = deserialize(serialized);
+
+        // Assert
+        assertNotNull(result);
+        assertInstanceOf(UUID.class, result);
+        assertEquals(original, result);
+    }
+
+    @Test
+    @DisplayName("Should deserialize LocalDateTime successfully")
+    void shouldDeserializeLocalDateTimeSuccessfully() {
+        // Arrange
+        LocalDateTime original = LocalDateTime.now();
+        byte[] serialized = SerializationUtil.serializeObjectAsByte(original);
+
+        // Act
+        Object result = deserialize(serialized);
+
+        // Assert
+        assertNotNull(result);
+        assertInstanceOf(LocalDateTime.class, result);
+        assertEquals(original, result);
+    }
+
+    @Test
+    @DisplayName("Should deserialize primitive array successfully")
+    void shouldDeserializePrimitiveArraySuccessfully() {
+        // Arrange
+        int[] original = {1, 2, 3, 4, 5};
+        byte[] serialized = SerializationUtil.serializeObjectAsByte(original);
+
+        // Act
+        Object result = deserialize(serialized);
+
+        // Assert
+        assertNotNull(result);
+        assertInstanceOf(int[].class, result);
+        assertArrayEquals(original, (int[]) result);
     }
 
     @Test
@@ -104,6 +172,120 @@ class SerializationUtilTest {
                 () -> deserialize(emptyBytes),
                 "Should throw exception for empty byte array"
         );
+    }
+
+    // =============== Security Filter Tests ===============
+
+    @Nested
+    @DisplayName("Security Filter Tests")
+    class SecurityFilterTests {
+
+        @Test
+        @DisplayName("Should throw SecurityException when deserializing complex objects (security protection)")
+        void shouldThrowSecurityExceptionWhenDeserializingComplexObjects() {
+            // Arrange - TestSerializableEntity is NOT a simple type, should be blocked
+            TestSerializableEntity entity = new TestSerializableEntity("test", 123);
+            byte[] serialized = SerializationUtil.serializeObjectAsByte(entity);
+
+            // Act & Assert - Security filter should block this
+            SecurityException exception = assertThrows(
+                    SecurityException.class,
+                    () -> deserialize(serialized),
+                    "Should throw SecurityException for complex objects (security protection)"
+            );
+
+            assertTrue(exception.getMessage().contains("Deserialization blocked for security reasons"));
+            assertTrue(exception.getMessage().contains("TestSerializableEntity"));
+        }
+
+        @Test
+        @DisplayName("Should allow deserialization of all wrapper types")
+        void shouldAllowDeserializationOfAllWrapperTypes() {
+            // Test all simple/wrapper types that should be allowed
+
+            // Boolean
+            Boolean boolVal = true;
+            assertEquals(boolVal, deserialize(SerializationUtil.serializeObjectAsByte(boolVal)));
+
+            // Byte
+            Byte byteVal = (byte) 42;
+            assertEquals(byteVal, deserialize(SerializationUtil.serializeObjectAsByte(byteVal)));
+
+            // Character
+            Character charVal = 'A';
+            assertEquals(charVal, deserialize(SerializationUtil.serializeObjectAsByte(charVal)));
+
+            // Short
+            Short shortVal = (short) 100;
+            assertEquals(shortVal, deserialize(SerializationUtil.serializeObjectAsByte(shortVal)));
+
+            // Integer
+            Integer intVal = 12345;
+            assertEquals(intVal, deserialize(SerializationUtil.serializeObjectAsByte(intVal)));
+
+            // Long
+            Long longVal = 123456789L;
+            assertEquals(longVal, deserialize(SerializationUtil.serializeObjectAsByte(longVal)));
+
+            // Float
+            Float floatVal = 3.14f;
+            assertEquals(floatVal, deserialize(SerializationUtil.serializeObjectAsByte(floatVal)));
+
+            // Double
+            Double doubleVal = 3.14159265359;
+            assertEquals(doubleVal, deserialize(SerializationUtil.serializeObjectAsByte(doubleVal)));
+
+            // String
+            String stringVal = "Hello, World!";
+            assertEquals(stringVal, deserialize(SerializationUtil.serializeObjectAsByte(stringVal)));
+
+            // UUID
+            UUID uuidVal = UUID.randomUUID();
+            assertEquals(uuidVal, deserialize(SerializationUtil.serializeObjectAsByte(uuidVal)));
+        }
+
+        @Test
+        @DisplayName("Should allow deserialization of date/time types")
+        void shouldAllowDeserializationOfDateTimeTypes() {
+            // LocalDate
+            LocalDate localDate = LocalDate.now();
+            assertEquals(localDate, deserialize(SerializationUtil.serializeObjectAsByte(localDate)));
+
+            // LocalDateTime
+            LocalDateTime localDateTime = LocalDateTime.now();
+            assertEquals(localDateTime, deserialize(SerializationUtil.serializeObjectAsByte(localDateTime)));
+
+            // Instant
+            Instant instant = Instant.now();
+            assertEquals(instant, deserialize(SerializationUtil.serializeObjectAsByte(instant)));
+        }
+
+        @Test
+        @DisplayName("Should allow deserialization of wrapper arrays")
+        void shouldAllowDeserializationOfWrapperArrays() {
+            // String array
+            String[] stringArray = {"a", "b", "c"};
+            assertArrayEquals(stringArray, (String[]) deserialize(SerializationUtil.serializeObjectAsByte(stringArray)));
+
+            // Integer array
+            Integer[] intArray = {1, 2, 3};
+            assertArrayEquals(intArray, (Integer[]) deserialize(SerializationUtil.serializeObjectAsByte(intArray)));
+        }
+
+        @Test
+        @DisplayName("Should block deserialization of ArrayList (complex type)")
+        void shouldBlockDeserializationOfArrayList() {
+            // ArrayList is a complex type, not in whitelist
+            ArrayList<String> list = new ArrayList<>();
+            list.add("test");
+            byte[] serialized = SerializationUtil.serializeObjectAsByte(list);
+
+            assertThrows(
+                    SecurityException.class,
+                    () -> deserialize(serialized),
+                    "Should block ArrayList deserialization"
+            );
+        }
     }
 
     // =============== serializeJsonObject(T) Tests ===============
@@ -312,21 +494,34 @@ class SerializationUtilTest {
     // =============== getDeserializedObject Tests ===============
 
     @Test
-    @DisplayName("Should deserialize object successfully")
-    void shouldDeserializeObjectSuccessfully() {
-        // Arrange
-        TestSerializableEntity entity = new TestSerializableEntity("deserialize", 111);
-        byte[] serialized = SerializationUtil.serializeObjectAsByte(entity);
+    @DisplayName("Should deserialize simple type object successfully")
+    void shouldDeserializeSimpleTypeObjectSuccessfully() {
+        // Arrange - Use simple type (allowed by security filter)
+        String original = "deserialize test";
+        byte[] serialized = SerializationUtil.serializeObjectAsByte(original);
 
         // Act
         Object result = SerializationUtil.getDeserializedObject(serialized);
 
         // Assert
         assertNotNull(result);
-        assertTrue(result instanceof TestSerializableEntity);
-        TestSerializableEntity deserialized = (TestSerializableEntity) result;
-        assertEquals("deserialize", deserialized.getName());
-        assertEquals(111, deserialized.getValue());
+        assertInstanceOf(String.class, result);
+        assertEquals(original, result);
+    }
+
+    @Test
+    @DisplayName("Should throw SecurityException when deserializing complex objects via getDeserializedObject")
+    void shouldThrowSecurityExceptionWhenDeserializingComplexObjectsViaGetDeserializedObject() {
+        // Arrange - Complex type should be blocked
+        TestSerializableEntity entity = new TestSerializableEntity("deserialize", 111);
+        byte[] serialized = SerializationUtil.serializeObjectAsByte(entity);
+
+        // Act & Assert
+        assertThrows(
+                SecurityException.class,
+                () -> SerializationUtil.getDeserializedObject(serialized),
+                "Should throw SecurityException for complex objects"
+        );
     }
 
     @Test
@@ -346,19 +541,33 @@ class SerializationUtilTest {
     // =============== getDeserializedObjectAsString Tests ===============
 
     @Test
-    @DisplayName("Should deserialize object and return as string")
-    void shouldDeserializeObjectAndReturnAsString() {
-        // Arrange
-        TestSerializableEntity entity = new TestSerializableEntity("toString", 222);
-        byte[] serialized = SerializationUtil.serializeObjectAsByte(entity);
+    @DisplayName("Should deserialize simple type and return as string")
+    void shouldDeserializeSimpleTypeAndReturnAsString() {
+        // Arrange - Use simple type
+        Integer original = 12345;
+        byte[] serialized = SerializationUtil.serializeObjectAsByte(original);
 
         // Act
         String result = SerializationUtil.getDeserializedObjectAsString(serialized);
 
         // Assert
         assertNotNull(result);
-        assertTrue(result.contains("toString"));
-        assertTrue(result.contains("222"));
+        assertEquals("12345", result);
+    }
+
+    @Test
+    @DisplayName("Should throw SecurityException when deserializing complex objects via getDeserializedObjectAsString")
+    void shouldThrowSecurityExceptionWhenDeserializingComplexObjectsViaGetDeserializedObjectAsString() {
+        // Arrange
+        TestSerializableEntity entity = new TestSerializableEntity("toString", 222);
+        byte[] serialized = SerializationUtil.serializeObjectAsByte(entity);
+
+        // Act & Assert
+        assertThrows(
+                SecurityException.class,
+                () -> SerializationUtil.getDeserializedObjectAsString(serialized),
+                "Should throw SecurityException for complex objects"
+        );
     }
 
     @Test
@@ -378,21 +587,43 @@ class SerializationUtilTest {
     // =============== Integration Tests ===============
 
     @Test
-    @DisplayName("Should serialize and deserialize maintaining object equality")
-    void shouldSerializeAndDeserializeMaintainingObjectEquality() {
-        // Arrange
+    @DisplayName("Should serialize and deserialize simple types maintaining equality")
+    void shouldSerializeAndDeserializeSimpleTypesMaintainingEquality() {
+        // Arrange - Use simple type (allowed by security filter)
+        String originalString = "integration test";
+        Integer originalInt = 999;
+        UUID originalUuid = UUID.randomUUID();
+
+        // Act & Assert - String
+        byte[] serializedString = SerializationUtil.serializeObjectAsByte(originalString);
+        assertEquals(originalString, SerializationUtil.getDeserializedObject(serializedString));
+
+        // Act & Assert - Integer
+        byte[] serializedInt = SerializationUtil.serializeObjectAsByte(originalInt);
+        assertEquals(originalInt, SerializationUtil.getDeserializedObject(serializedInt));
+
+        // Act & Assert - UUID
+        byte[] serializedUuid = SerializationUtil.serializeObjectAsByte(originalUuid);
+        assertEquals(originalUuid, SerializationUtil.getDeserializedObject(serializedUuid));
+    }
+
+    @Test
+    @DisplayName("Should serialize complex objects but block deserialization (security)")
+    void shouldSerializeComplexObjectsButBlockDeserialization() {
+        // Arrange - Serialization of complex objects is allowed
         TestSerializableEntity original = new TestSerializableEntity("integration", 999);
 
-        // Act
+        // Act - Serialization works
         byte[] serialized = SerializationUtil.serializeObjectAsByte(original);
-        Object deserialized = SerializationUtil.getDeserializedObject(serialized);
+        assertNotNull(serialized);
+        assertTrue(serialized.length > 0);
 
-        // Assert
-        assertNotNull(deserialized);
-        assertTrue(deserialized instanceof TestSerializableEntity);
-        TestSerializableEntity result = (TestSerializableEntity) deserialized;
-        assertEquals(original.getName(), result.getName());
-        assertEquals(original.getValue(), result.getValue());
+        // Assert - But deserialization is blocked for security
+        assertThrows(
+                SecurityException.class,
+                () -> SerializationUtil.getDeserializedObject(serialized),
+                "Deserialization of complex objects should be blocked"
+        );
     }
 
     @Test
@@ -432,6 +663,30 @@ class SerializationUtilTest {
                 Arguments.of(true),
                 Arguments.of(Arrays.asList(1, 2, 3)),
                 Arguments.of(new TestSerializableEntity("param", 100))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideSimpleTypesForRoundTrip")
+    @DisplayName("Should serialize and deserialize simple types round-trip")
+    void shouldSerializeAndDeserializeSimpleTypesRoundTrip(Object original) {
+        // Act
+        byte[] serialized = SerializationUtil.serializeObjectAsByte(original);
+        Object deserialized = deserialize(serialized);
+
+        // Assert
+        assertEquals(original, deserialized);
+    }
+
+    private static Stream<Arguments> provideSimpleTypesForRoundTrip() {
+        return Stream.of(
+                Arguments.of("String value"),
+                Arguments.of(42),
+                Arguments.of(3.14),
+                Arguments.of(true),
+                Arguments.of(UUID.randomUUID()),
+                Arguments.of(LocalDate.now()),
+                Arguments.of(LocalDateTime.now())
         );
     }
 }

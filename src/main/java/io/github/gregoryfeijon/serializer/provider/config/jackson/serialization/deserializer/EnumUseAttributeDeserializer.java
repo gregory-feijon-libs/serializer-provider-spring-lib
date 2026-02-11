@@ -13,6 +13,7 @@ import io.github.gregoryfeijon.serializer.provider.util.enums.EnumMarshallingUti
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.util.Optional;
 
 import static io.github.gregoryfeijon.serializer.provider.config.jackson.serialization.JacksonSerializationHelper.getEnumUseAttributeInMarshallingAnnotation;
@@ -28,6 +29,9 @@ import static io.github.gregoryfeijon.serializer.provider.config.jackson.seriali
  */
 @Slf4j
 public class EnumUseAttributeDeserializer extends StdDeserializer<Enum<?>> implements ContextualDeserializer {
+
+    @Serial
+    private static final long serialVersionUID = -1262333274416973023L;
 
     /**
      * The enum class this deserializer handles.
@@ -102,7 +106,9 @@ public class EnumUseAttributeDeserializer extends StdDeserializer<Enum<?>> imple
                 : ctxt.getContextualType();
         Class<?> raw = type.getRawClass();
         if (raw != null && raw.isEnum()) {
-            return new EnumUseAttributeDeserializer((Class<? extends Enum<?>>) raw);
+            @SuppressWarnings("unchecked") // Safe: raw.isEnum() validates the type before cast
+            var rawEnumType = (Class<? extends Enum<?>>) raw;
+            return new EnumUseAttributeDeserializer(rawEnumType);
         }
         return ctxt.findNonContextualValueDeserializer(type);
     }

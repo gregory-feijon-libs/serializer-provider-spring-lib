@@ -14,8 +14,10 @@ import org.springframework.util.StringUtils;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -73,8 +75,9 @@ import java.util.concurrent.atomic.AtomicReference;
  *   <li>Global default: GSON if available, otherwise JACKSON</li>
  * </ul>
  * <p>
- * <b>Thread Safety:</b> This class is thread-safe and uses synchronized initialization
- * to prevent race conditions during startup.
+ * <b>Thread Safety:</b> This class is thread-safe. Uses double-checked locking with
+ * AtomicBoolean for efficient initialization, minimizing synchronization overhead
+ * after the provider is initialized.
  *
  * @see SerializerAdapter
  * @see SerializationType
@@ -120,6 +123,14 @@ public final class SerializerProvider {
     private static final AtomicReference<SerializerProviderProperties> configProps = new AtomicReference<>();
 
     /**
+     * Flag indicating whether the provider has been initialized.
+     * <p>
+     * Uses AtomicBoolean for thread-safe initialization without requiring
+     * synchronization on every access after initialization.
+     */
+    private static final AtomicBoolean initialized = new AtomicBoolean(false);
+
+    /**
      * Initializes the provider with automatic bean discovery if not already initialized.
      * <p>
      * This method is called automatically on first access to any adapter. It scans
@@ -136,34 +147,55 @@ public final class SerializerProvider {
      * </ol>
      * <p>
      * This method is thread-safe and will only initialize once, even if called
-     * concurrently from multiple threads.
+     * concurrently from multiple threads. Uses double-checked locking with AtomicBoolean
+     * to minimize synchronization overhead after initialization.
      *
      * @throws IllegalStateException If no Gson or ObjectMapper beans are found in the context,
      *                               or if the provider is disabled but initialization is attempted
      */
-    public static synchronized void initializeIfEmpty() {
-        initializeProps();
-        if (!isEnabled()) {
+    public static void initializeIfEmpty() {
+        if (initialized.get()) {
             return;
         }
-        if (DEFAULT_ADAPTERS.isEmpty()) {
-            try {
-                discoverAndRegisterGsonAdapters();
-                discoverAndRegisterJacksonAdapters();
-
-                if (QUALIFIED_ADAPTERS.isEmpty()) {
-                    throw new IllegalStateException("No Gson or ObjectMapper beans found in application context!");
-                }
-
-                defaultType = initializeDefaultType();
-
-                logInitializationSummary();
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                        "SerializerProvider initialization failed. Verify if there are Gson or ObjectMapper beans configured!",
-                        e
-                );
+        synchronized (SerializerProvider.class) {
+            if (initialized.get()) {
+                return;
             }
+            initializeProps();
+            if (!isEnabled()) {
+                initialized.set(true);
+                return;
+            }
+            performInitialization();
+        }
+    }
+
+    /**
+     * Performs the actual initialization: discovers adapters, validates, sets defaults and logs.
+     * <p>
+     * This method is called within the synchronized block of {@link #initializeIfEmpty()}
+     * after all precondition checks have passed.
+     *
+     * @throws IllegalStateException If no serializer beans are found or initialization fails
+     */
+    private static void performInitialization() {
+        try {
+            discoverAndRegisterGsonAdapters();
+            discoverAndRegisterJacksonAdapters();
+
+            if (QUALIFIED_ADAPTERS.isEmpty()) {
+                throw new IllegalStateException("No Gson or ObjectMapper beans found in application context!");
+            }
+
+            defaultType = initializeDefaultType();
+            initialized.set(true);
+
+            logInitializationSummary();
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "SerializerProvider initialization failed. Verify if there are Gson or ObjectMapper beans configured!",
+                    e
+            );
         }
     }
 
@@ -180,24 +212,46 @@ public final class SerializerProvider {
      * @return The selected default serialization type
      */
     private static SerializationType initializeDefaultType() {
-        var propsDefaultType = configProps.get().getType();
-        if (StringUtils.hasText(propsDefaultType)) {
-            var serializationTypeProps = EnumUtil.getEnumOrNull(
-                    SerializationType.class,
-                    SerializationType::getDescription,
-                    propsDefaultType
-            );
-            if (serializationTypeProps != null) {
-                log.debug("Using configured default type: {}", serializationTypeProps);
-                return serializationTypeProps;
-            }
-            log.warn("Invalid serialization type configured: '{}'. Falling back to auto-detection.", propsDefaultType);
-        }
+        return getConfiguredType().orElseGet(SerializerProvider::autoDetectType);
+    }
 
+    /**
+     * Attempts to resolve the serialization type from configuration properties.
+     * <p>
+     * Looks up the {@code serializer-provider.main.type} property and validates
+     * it against the available {@link SerializationType} values.
+     *
+     * @return An {@link Optional} containing the configured type, or empty if not configured or invalid
+     */
+    private static Optional<SerializationType> getConfiguredType() {
+        var propsDefaultType = configProps.get().getType();
+        if (!StringUtils.hasText(propsDefaultType)) {
+            return Optional.empty();
+        }
+        var serializationTypeProps = EnumUtil.getEnumOrNull(
+                SerializationType.class,
+                SerializationType::getDescription,
+                propsDefaultType
+        );
+        if (serializationTypeProps != null) {
+            log.debug("Using configured default type: {}", serializationTypeProps);
+            return Optional.of(serializationTypeProps);
+        }
+        log.warn("Invalid serialization type configured: '{}'. Falling back to auto-detection.", propsDefaultType);
+        return Optional.empty();
+    }
+
+    /**
+     * Auto-detects the default serialization type based on available adapters.
+     * <p>
+     * Prefers GSON if available, otherwise falls back to JACKSON.
+     *
+     * @return The auto-detected serialization type
+     */
+    private static SerializationType autoDetectType() {
         SerializationType autoDetectedType = QUALIFIED_ADAPTERS.containsKey(SerializationType.GSON)
                 ? SerializationType.GSON
                 : SerializationType.JACKSON;
-
         log.debug("Auto-detected default type: {}", autoDetectedType);
         return autoDetectedType;
     }
@@ -421,7 +475,7 @@ public final class SerializerProvider {
      *                               after successful initialization)
      */
     public static SerializerAdapter getAdapter() {
-        if (DEFAULT_ADAPTERS.isEmpty()) {
+        if (!initialized.get()) {
             initializeIfEmpty();
         }
         return getDefaultAdapter(defaultType);
@@ -450,7 +504,7 @@ public final class SerializerProvider {
      * @throws IllegalStateException If no adapter is found for the specified type
      */
     public static SerializerAdapter getAdapter(SerializationType type) {
-        if (DEFAULT_ADAPTERS.isEmpty()) {
+        if (!initialized.get()) {
             initializeIfEmpty();
         }
         return getDefaultAdapter(type);
@@ -488,7 +542,7 @@ public final class SerializerProvider {
      */
     public static SerializerAdapter getAdapter(SerializationType type, String beanName) {
         validatedParams(type, beanName);
-        if (QUALIFIED_ADAPTERS.isEmpty()) {
+        if (!initialized.get()) {
             initializeIfEmpty();
         }
         return getSerializerAdapter(type, beanName);
@@ -597,7 +651,7 @@ public final class SerializerProvider {
      * Returns an empty set if no adapters are registered for the type.
      */
     public static Set<String> getAvailableNames(SerializationType type) {
-        if (QUALIFIED_ADAPTERS.isEmpty()) {
+        if (!initialized.get()) {
             initializeIfEmpty();
         }
         Map<String, SerializerAdapter> adaptersForType = QUALIFIED_ADAPTERS.get(type);
@@ -631,7 +685,7 @@ public final class SerializerProvider {
      * {@code false} otherwise
      */
     public static boolean hasAdapter(SerializationType type, String beanName) {
-        if (QUALIFIED_ADAPTERS.isEmpty()) {
+        if (!initialized.get()) {
             initializeIfEmpty();
         }
         Map<String, SerializerAdapter> adaptersForType = QUALIFIED_ADAPTERS.get(type);
@@ -672,13 +726,18 @@ public final class SerializerProvider {
      * @param defaultType The default serialization type to use
      */
     public static void initialize(Map<SerializationType, SerializerAdapter> adapters, SerializationType defaultType) {
-        if (DEFAULT_ADAPTERS.isEmpty()) {
-            adapters.forEach((type, adapter) -> {
-                DEFAULT_ADAPTERS.put(type, adapter);
-                registerAdapter(type, "default", adapter);
-            });
-            SerializerProvider.defaultType = defaultType;
-            log.info("SerializerProvider initialized (legacy). Default type: {}", defaultType);
+        if (!initialized.get()) {
+            synchronized (SerializerProvider.class) {
+                if (!initialized.get()) {
+                    adapters.forEach((type, adapter) -> {
+                        DEFAULT_ADAPTERS.put(type, adapter);
+                        registerAdapter(type, "default", adapter);
+                    });
+                    SerializerProvider.defaultType = defaultType;
+                    initialized.set(true);
+                    log.info("SerializerProvider initialized (legacy). Default type: {}", defaultType);
+                }
+            }
         }
     }
 

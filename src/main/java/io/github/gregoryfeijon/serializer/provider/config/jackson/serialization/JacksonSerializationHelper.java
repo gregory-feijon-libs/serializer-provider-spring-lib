@@ -1,24 +1,21 @@
 package io.github.gregoryfeijon.serializer.provider.config.jackson.serialization;
 
 import io.github.gregoryfeijon.serializer.provider.domain.annotation.EnumUseAttributeInMarshalling;
+import io.github.gregoryfeijon.serializer.provider.util.enums.EnumMarshallingUtil;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.StringUtils;
-
-import java.lang.reflect.Field;
-import java.util.Objects;
 
 /**
  * Helper class for Jackson serialization and deserialization operations.
  * <p>
  * This utility class provides common methods used by Jackson serializers and deserializers,
  * particularly for handling enum types with custom attribute-based serialization.
+ * <p>
+ * Delegates to {@link EnumMarshallingUtil} for the actual logic to avoid code duplication
+ * between Gson and Jackson implementations.
  *
  * @author gregory.feijon
  */
-@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class JacksonSerializationHelper {
 
@@ -30,17 +27,12 @@ public final class JacksonSerializationHelper {
      * @return The annotation, or null if not present
      * @throws IllegalStateException If enumType is null
      */
-    public static EnumUseAttributeInMarshalling getEnumUseAttributeInMarshallingAnnotation(Enum<?> value, Class<? extends Enum<?>> enumType) {
+    public static EnumUseAttributeInMarshalling getEnumUseAttributeInMarshallingAnnotation(
+            Enum<?> value, Class<? extends Enum<?>> enumType) {
         if (enumType == null) {
             throw new IllegalStateException("enumType must not be null after contextualization");
         }
-        try {
-            Field field = enumType.getField(value.name());
-            return field.getAnnotation(EnumUseAttributeInMarshalling.class);
-        } catch (NoSuchFieldException e) {
-            log.warn("Field with the specified name not found: {}", value.name(), e);
-        }
-        return null;
+        return EnumMarshallingUtil.getAnnotation(value, enumType);
     }
 
     /**
@@ -52,13 +44,9 @@ public final class JacksonSerializationHelper {
      * @param enumType       The enum class
      * @return true if the enum matches the attribute value, false otherwise
      */
-    public static boolean isValidEnum(Enum<?> enumValue, String attributeName, String attributeValue, Class<? extends Enum<?>> enumType) {
-        if (!StringUtils.hasText(attributeName)) {
-            return enumValue.name().equals(attributeValue);
-        } else {
-            String attributeValueFromEnum = getAttributeValue(enumValue, attributeName, enumType);
-            return Objects.equals(attributeValueFromEnum, attributeValue);
-        }
+    public static boolean isValidEnum(Enum<?> enumValue, String attributeName,
+                                      String attributeValue, Class<? extends Enum<?>> enumType) {
+        return EnumMarshallingUtil.isMatchingEnum(enumValue, attributeName, attributeValue, enumType);
     }
 
     /**
@@ -70,17 +58,11 @@ public final class JacksonSerializationHelper {
      * @return The attribute value, or null if not found
      * @throws IllegalStateException If enumType is null
      */
-    public static String getAttributeValue(Enum<?> value, String attributeName, Class<? extends Enum<?>> enumType) {
-        if (value != null && attributeName != null) {
-            if (enumType == null) {
-                throw new IllegalStateException("enumType must not be null after contextualization");
-            }
-            Field field = ReflectionUtils.findField(enumType, attributeName);
-            if (field != null) {
-                ReflectionUtils.makeAccessible(field);
-                return (String) ReflectionUtils.getField(field, value);
-            }
+    public static String getAttributeValue(Enum<?> value, String attributeName,
+                                           Class<? extends Enum<?>> enumType) {
+        if (enumType == null) {
+            throw new IllegalStateException("enumType must not be null after contextualization");
         }
-        return null;
+        return EnumMarshallingUtil.getAttributeValue(value, attributeName, enumType);
     }
 }
