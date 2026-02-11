@@ -7,6 +7,7 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.github.gregoryfeijon.serializer.provider.config.gson.GsonDefaultBuilder;
+import io.github.gregoryfeijon.serializer.provider.util.TestSerializerUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,7 +52,7 @@ class GsonRemoveUnusedDecimalAdapterTest {
             intAdapter.write(writer, null);
 
             // Assert
-            assertThat(sw.toString()).isEqualTo("null");
+            assertThat(sw).hasToString("null");
         }
 
         @Test
@@ -65,7 +66,7 @@ class GsonRemoveUnusedDecimalAdapterTest {
             intAdapter.write(writer, 42);
 
             // Assert
-            assertThat(sw.toString()).isEqualTo("42");
+            assertThat(sw).hasToString("42");
         }
 
         @Test
@@ -79,7 +80,7 @@ class GsonRemoveUnusedDecimalAdapterTest {
             doubleAdapter.write(writer, 10.0);
 
             // Assert
-            assertThat(sw.toString()).isEqualTo("10");
+            assertThat(sw).hasToString("10");
         }
 
         @Test
@@ -143,13 +144,12 @@ class GsonRemoveUnusedDecimalAdapterTest {
 
         @Test
         @DisplayName("Should read string token as number")
-        void shouldReadStringTokenAsNumber() throws IOException {
+        void shouldReadStringTokenAsNumber() {
             // Arrange
-            JsonReader reader = new JsonReader(new StringReader("\"123\""));
-            reader.setLenient(true);
+            Gson gson = TestSerializerUtil.getGson();
 
             // Act
-            Integer result = intAdapter.read(reader);
+            Integer result = gson.fromJson("\"123\"", Integer.class);
 
             // Assert
             assertThat(result).isEqualTo(123);
@@ -157,13 +157,12 @@ class GsonRemoveUnusedDecimalAdapterTest {
 
         @Test
         @DisplayName("Should return null for empty string token")
-        void shouldReturnNullForEmptyStringToken() throws IOException {
+        void shouldReturnNullForEmptyStringToken() {
             // Arrange
-            JsonReader reader = new JsonReader(new StringReader("\"\""));
-            reader.setLenient(true);
+            Gson gson = TestSerializerUtil.getGson();
 
             // Act
-            Integer result = intAdapter.read(reader);
+            Integer result = gson.fromJson("\"\"", Integer.class);
 
             // Assert
             assertThat(result).isNull();
@@ -173,11 +172,10 @@ class GsonRemoveUnusedDecimalAdapterTest {
         @DisplayName("Should throw on invalid string token")
         void shouldThrowOnInvalidStringToken() {
             // Arrange
-            JsonReader reader = new JsonReader(new StringReader("\"abc\""));
-            reader.setLenient(true);
+            Gson gson = TestSerializerUtil.getGson();
 
             // Act & Assert
-            assertThatThrownBy(() -> intAdapter.read(reader))
+            assertThatThrownBy(() -> gson.fromJson("\"abc\"", Integer.class))
                     .isInstanceOf(JsonSyntaxException.class)
                     .hasMessageContaining("Expected number but got");
         }

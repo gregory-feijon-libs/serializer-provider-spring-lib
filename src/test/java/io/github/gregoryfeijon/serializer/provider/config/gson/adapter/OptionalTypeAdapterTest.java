@@ -50,7 +50,8 @@ class OptionalTypeAdapterTest {
         @DisplayName("Should serialize present Optional unwrapping value")
         void shouldSerializePresentOptional() {
             // Arrange
-            Type type = new TypeToken<Optional<String>>() {}.getType();
+            Type type = new TypeToken<Optional<String>>() {
+            }.getType();
             Optional<String> opt = Optional.of("hello");
 
             // Act
@@ -64,7 +65,8 @@ class OptionalTypeAdapterTest {
         @DisplayName("Should serialize empty Optional as null")
         void shouldSerializeEmptyOptionalAsNull() {
             // Arrange
-            Type type = new TypeToken<Optional<String>>() {}.getType();
+            Type type = new TypeToken<Optional<String>>() {
+            }.getType();
             Optional<String> opt = Optional.empty();
 
             // Act
@@ -83,14 +85,15 @@ class OptionalTypeAdapterTest {
         @DisplayName("Should deserialize non-null value to present Optional")
         void shouldDeserializeNonNullToPresentOptional() {
             // Arrange
-            Type type = new TypeToken<Optional<String>>() {}.getType();
+            Type type = new TypeToken<Optional<String>>() {
+            }.getType();
 
             // Act
-            Optional<?> result = gson.fromJson("\"world\"", type);
+            @SuppressWarnings("unchecked")
+            Optional<String> result = (Optional<String>) gson.fromJson("\"world\"", type);
 
             // Assert
-            assertThat(result).isPresent();
-            assertThat(result.get()).isEqualTo("world");
+            assertThat(result).isPresent().hasValue("world");
         }
 
         @Test
@@ -98,7 +101,8 @@ class OptionalTypeAdapterTest {
         void shouldDeserializeJsonNullToEmptyOptional() {
             // Arrange - call adapter directly with JsonNull to cover the isJsonNull branch
             OptionalTypeAdapter adapter = new OptionalTypeAdapter();
-            Type type = new TypeToken<Optional<String>>() {}.getType();
+            Type type = new TypeToken<Optional<String>>() {
+            }.getType();
 
             // Act
             Optional<?> result = adapter.deserialize(JsonNull.INSTANCE, type, gson::fromJson);

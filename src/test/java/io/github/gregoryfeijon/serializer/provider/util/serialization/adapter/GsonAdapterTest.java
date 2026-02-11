@@ -39,8 +39,9 @@ class GsonAdapterTest {
             String json = adapter.serialize(entity);
 
             // Assert
-            assertThat(json).contains("\"name\":\"test\"");
-            assertThat(json).contains("\"id\":1");
+            assertThat(json)
+                    .contains("\"name\":\"test\"")
+                    .contains("\"id\":1");
         }
 
         @Test
@@ -64,8 +65,9 @@ class GsonAdapterTest {
             String json = adapter.serialize(entity, type);
 
             // Assert
-            assertThat(json).contains("\"name\":\"typed\"");
-            assertThat(json).contains("\"id\":2");
+            assertThat(json)
+                    .contains("\"name\":\"typed\"")
+                    .contains("\"id\":2");
         }
 
         @Test

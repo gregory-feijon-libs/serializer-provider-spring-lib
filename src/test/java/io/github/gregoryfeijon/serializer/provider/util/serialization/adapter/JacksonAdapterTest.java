@@ -45,8 +45,9 @@ class JacksonAdapterTest {
             String json = adapter.serialize(entity);
 
             // Assert
-            assertThat(json).contains("\"name\":\"test\"");
-            assertThat(json).contains("\"id\":1");
+            assertThat(json)
+                    .contains("\"name\":\"test\"")
+                    .contains("\"id\":1");
         }
 
         @Test
@@ -70,8 +71,9 @@ class JacksonAdapterTest {
             String json = adapter.serialize(entity, type);
 
             // Assert
-            assertThat(json).contains("\"name\":\"typed\"");
-            assertThat(json).contains("\"id\":2");
+            assertThat(json)
+                    .contains("\"name\":\"typed\"")
+                    .contains("\"id\":2");
         }
 
         @Test
@@ -177,16 +179,17 @@ class JacksonAdapterTest {
             ObjectMapper mockMapper = mock(ObjectMapper.class);
             when(mockMapper.writeValueAsString(any())).thenThrow(new JsonProcessingException("mock error") {});
             JacksonAdapter mockAdapter = new JacksonAdapter(mockMapper);
+            TestEntity entity = new TestEntity("test", 1);
 
             // Act & Assert
-            assertThatThrownBy(() -> mockAdapter.serialize(new TestEntity("test", 1)))
+            assertThatThrownBy(() -> mockAdapter.serialize(entity))
                     .isInstanceOf(SerializationException.class)
                     .hasMessageContaining("Failed to serialize object");
         }
 
         @Test
         @DisplayName("Should throw SerializationException when serialize(Object, Type) fails")
-        void shouldThrowOnSerializeWithTypeFailure() throws Exception {
+        void shouldThrowOnSerializeWithTypeFailure() {
             // Arrange
             ObjectMapper mockMapper = mock(ObjectMapper.class);
             when(mockMapper.constructType(any(Type.class))).thenThrow(new IllegalArgumentException("mock error"));

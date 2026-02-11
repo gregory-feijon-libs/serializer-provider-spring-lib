@@ -16,6 +16,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mockStatic;
+
+import org.mockito.MockedStatic;
 
 /**
  * Test class for {@link SerializerProviderAutoConfiguration}.
@@ -80,13 +84,19 @@ class SerializerProviderAutoConfigurationTest {
 
     @Test
     @DisplayName("Should propagate IllegalStateException when initialization fails")
-    void shouldPropagateExceptionOnFailure() throws Exception {
-        // Arrange - reset and mark as initialized with empty adapters to simulate failure
+    void shouldPropagateExceptionOnFailure() {
+        // Arrange
         SerializerProviderAutoConfiguration config = new SerializerProviderAutoConfiguration();
         ApplicationRunner runner = config.serializerProviderInitializer();
 
-        // Act - first run succeeds, so this just validates the runner works
-        assertThatCode(() -> runner.run(null))
-                .doesNotThrowAnyException();
+        // Act & Assert
+        try (MockedStatic<SerializerProvider> mocked = mockStatic(SerializerProvider.class)) {
+            mocked.when(SerializerProvider::initializeIfEmpty)
+                    .thenThrow(new IllegalStateException("No beans found"));
+
+            assertThatThrownBy(() -> runner.run(null))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("No beans found");
+        }
     }
 }

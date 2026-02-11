@@ -56,7 +56,7 @@ class HibernateProxyTypeAdapterTest {
             adapter.write(jsonWriter, null);
 
             // Assert
-            assertThat(stringWriter.toString()).isEqualTo("null");
+            assertThat(stringWriter).hasToString("null");
         }
 
         @Test
@@ -71,7 +71,7 @@ class HibernateProxyTypeAdapterTest {
             adapter.write(jsonWriter, plainValue);
 
             // Assert
-            assertThat(stringWriter.toString()).isEqualTo("\"not a proxy\"");
+            assertThat(stringWriter).hasToString("\"not a proxy\"");
         }
     }
 }
