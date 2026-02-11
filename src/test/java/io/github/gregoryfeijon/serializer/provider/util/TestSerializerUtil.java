@@ -50,19 +50,14 @@ public final class TestSerializerUtil {
      */
     public static ObjectMapper buildObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
-
-        // Register Java Time module for date/time handling
         JavaTimeModule javaTimeModule = new JavaTimeModule();
         mapper.registerModule(javaTimeModule);
 
-        // Register the custom enum module (same as production)
         EnumCustomizationModule enumModule = new EnumCustomizationModule(
                 new EnumSerializers(),
                 new EnumDeserializers()
         );
         mapper.registerModule(enumModule);
-
-        // Configure serialization features
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 

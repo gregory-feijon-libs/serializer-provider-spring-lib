@@ -8,13 +8,8 @@ import com.google.gson.stream.JsonWriter;
 import io.github.gregoryfeijon.serializer.provider.domain.annotation.EnumUseAttributeInMarshalling;
 import io.github.gregoryfeijon.serializer.provider.util.enums.EnumMarshallingUtil;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -27,7 +22,6 @@ import java.util.Optional;
  * @param <T> The enum type to adapt
  * @author gregory.feijon
  */
-@Slf4j
 @RequiredArgsConstructor
 public class EnumUseAttributeInMarshallingTypeAdapter<T> extends TypeAdapter<T> {
 
@@ -60,13 +54,13 @@ public class EnumUseAttributeInMarshallingTypeAdapter<T> extends TypeAdapter<T> 
                 return;
             }
             Enum<?> enumValue = (Enum<?>) value;
-            EnumUseAttributeInMarshalling useAttribute = getEnumUseAttributeInMarshallingAnnotation(enumValue);
+            EnumUseAttributeInMarshalling useAttribute = EnumMarshallingUtil.getAnnotation(enumValue, enumClass);
             String attributeName = Optional.ofNullable(useAttribute)
                     .map(EnumMarshallingUtil::getAttributeName)
                     .orElse(null);
 
             if (attributeName != null) {
-                String attributeValue = getAttributeValue(enumValue, attributeName);
+                String attributeValue = EnumMarshallingUtil.getAttributeValue(enumValue, attributeName, enumClass);
                 out.value(attributeValue);
             } else {
                 out.value(enumValue.name());
@@ -85,6 +79,7 @@ public class EnumUseAttributeInMarshallingTypeAdapter<T> extends TypeAdapter<T> 
      * @throws IOException If an I/O error occurs
      */
     @Override
+    @SuppressWarnings("unchecked")
     public T read(JsonReader in) throws IOException {
         if (in.peek() == JsonToken.NULL) {
             in.nextNull();
@@ -94,65 +89,14 @@ public class EnumUseAttributeInMarshallingTypeAdapter<T> extends TypeAdapter<T> 
         if (attributeValue != null && enumClass.isEnum()) {
             for (Object value : enumClass.getEnumConstants()) {
                 Enum<?> enumValue = (Enum<?>) value;
-                EnumUseAttributeInMarshalling useAttribute = getEnumUseAttributeInMarshallingAnnotation(enumValue);
+                EnumUseAttributeInMarshalling useAttribute = EnumMarshallingUtil.getAnnotation(enumValue, enumClass);
                 String attributeName = Optional.ofNullable(useAttribute)
                         .map(EnumMarshallingUtil::getAttributeName)
                         .orElse(null);
 
-                if (isValidEnum(enumValue, attributeName, attributeValue)) {
+                if (EnumMarshallingUtil.isMatchingEnum(enumValue, attributeName, attributeValue, enumClass)) {
                     return (T) enumValue;
                 }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Retrieves the {@link EnumUseAttributeInMarshalling} annotation from an enum constant.
-     *
-     * @param value The enum constant
-     * @return The annotation, or null if not present
-     */
-    private EnumUseAttributeInMarshalling getEnumUseAttributeInMarshallingAnnotation(Enum<?> value) {
-        try {
-            Field field = enumClass.getField(value.name());
-            return field.getAnnotation(EnumUseAttributeInMarshalling.class);
-        } catch (NoSuchFieldException e) {
-            log.warn("Field with the specified name not found");
-        }
-        return null;
-    }
-
-    /**
-     * Determines if an enum constant matches the given attribute value.
-     *
-     * @param enumValue      The enum constant to check
-     * @param attributeName  The attribute name to use for comparison
-     * @param attributeValue The attribute value to match against
-     * @return true if the enum matches the attribute value, false otherwise
-     */
-    private boolean isValidEnum(Enum<?> enumValue, String attributeName, String attributeValue) {
-        if (!StringUtils.hasText(attributeName)) {
-            return enumValue.name().equals(attributeValue);
-        } else {
-            String attributeValueFromEnum = getAttributeValue(enumValue, attributeName);
-            return Objects.equals(attributeValueFromEnum, attributeValue);
-        }
-    }
-
-    /**
-     * Retrieves the value of a specified attribute from an enum constant.
-     *
-     * @param value         The enum constant
-     * @param attributeName The name of the attribute to retrieve
-     * @return The attribute value, or null if not found
-     */
-    private String getAttributeValue(Enum<?> value, String attributeName) {
-        if (value != null && attributeName != null) {
-            Field field = ReflectionUtils.findField(enumClass, attributeName);
-            if (field != null) {
-                ReflectionUtils.makeAccessible(field);
-                return (String) ReflectionUtils.getField(field, value);
             }
         }
         return null;

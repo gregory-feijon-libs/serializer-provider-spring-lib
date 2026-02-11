@@ -4,9 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gregoryfeijon.serializer.provider.domain.enums.SerializationType;
-import io.github.gregoryfeijon.serializer.provider.exception.ApiException;
+import io.github.gregoryfeijon.serializer.provider.exception.SerializationException;
 import lombok.Getter;
-import org.springframework.core.serializer.support.SerializationFailedException;
 
 import java.lang.reflect.Type;
 
@@ -34,57 +33,57 @@ public non-sealed class JacksonAdapter implements SerializerAdapter {
     /**
      * {@inheritDoc}
      *
-     * @throws ApiException If serialization fails
+     * @throws SerializationException If serialization fails
      */
     @Override
-    public String serialize(Object object) throws SerializationFailedException {
+    public String serialize(Object object) {
         try {
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
-            throw new ApiException("Serialization Failed", e);
+            throw new SerializationException("Failed to serialize object", e);
         }
     }
 
     /**
      * {@inheritDoc}
      *
-     * @throws SerializationFailedException If serialization fails
+     * @throws SerializationException If serialization fails
      */
     @Override
-    public String serialize(Object object, Type type) throws SerializationFailedException {
+    public String serialize(Object object, Type type) {
         try {
             JavaType javaType = mapper.constructType(type);
             return mapper.writerFor(javaType).writeValueAsString(object);
         } catch (JsonProcessingException e) {
-            throw new SerializationFailedException("Error while trying to serialize object with specific type!", e);
+            throw new SerializationException("Failed to serialize object with type: " + type.getTypeName(), e);
         }
     }
 
     /**
      * {@inheritDoc}
      *
-     * @throws ApiException If deserialization fails
+     * @throws SerializationException If deserialization fails
      */
     @Override
-    public <T> T deserialize(String json, Class<T> type) throws SerializationFailedException {
+    public <T> T deserialize(String json, Class<T> type) {
         try {
             return mapper.readValue(json, type);
         } catch (JsonProcessingException e) {
-            throw new ApiException("Deserialization failed", e);
+            throw new SerializationException("Failed to deserialize JSON to " + type.getSimpleName(), e);
         }
     }
 
     /**
      * {@inheritDoc}
      *
-     * @throws SerializationFailedException If deserialization fails
+     * @throws SerializationException If deserialization fails
      */
     @Override
-    public <T> T deserialize(String json, Type type) throws SerializationFailedException {
+    public <T> T deserialize(String json, Type type) {
         try {
             return mapper.readValue(json, mapper.constructType(type));
         } catch (JsonProcessingException e) {
-            throw new SerializationFailedException("Error while trying to deserialize object with specific type!", e);
+            throw new SerializationException("Failed to deserialize JSON to type: " + type.getTypeName(), e);
         }
     }
 
