@@ -89,7 +89,7 @@ class GsonTypesUtilTest {
     void shouldThrowApiExceptionWhenGenClassIsNull() {
         ApiException ex = assertThrows(
                 ApiException.class,
-                () -> GsonTypesUtil.getType(List.class, null)
+                () -> GsonTypesUtil.getType(List.class, (Class<?>) null)
         );
 
         assertEquals("Raw class and generic class must not be null", ex.getMessage());
@@ -100,7 +100,7 @@ class GsonTypesUtilTest {
     void shouldThrowApiExceptionWhenBothParametersAreNull() {
         ApiException exception = assertThrows(
                 ApiException.class,
-                () -> GsonTypesUtil.getType(null, null),
+                () -> GsonTypesUtil.getType((Class<?>) null, (Class<?>) null),
                 "Should throw ApiException when both parameters are null"
         );
 
@@ -332,6 +332,270 @@ class GsonTypesUtilTest {
 
         Type expectedType = TypeToken.getParameterized(Collection.class, elementClass).getType();
         assertEquals(expectedType, result);
+    }
+
+    // =============== getMapType(Class<?>, Class<?>) Tests ===============
+
+    @Test
+    @DisplayName("Should create Map type correctly")
+    void shouldCreateMapTypeCorrectly() {
+        Type result = GsonTypesUtil.getMapType(String.class, Integer.class);
+
+        assertNotNull(result, "Result should not be null");
+
+        Type expectedType = TypeToken.getParameterized(Map.class, String.class, Integer.class).getType();
+        assertEquals(expectedType, result, "Should match expected Map<String, Integer> type");
+    }
+
+    @Test
+    @DisplayName("Should serialize and deserialize Map correctly with Gson")
+    void shouldSerializeAndDeserializeMapCorrectlyWithGson() {
+        Map<String, Integer> original = Map.of("a", 1, "b", 2);
+        String json = gson.toJson(original);
+
+        Type mapType = GsonTypesUtil.getMapType(String.class, Integer.class);
+        Map<String, Integer> result = gson.fromJson(json, mapType);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(1, result.get("a"));
+        assertEquals(2, result.get("b"));
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when keyClass is null for getMapType")
+    void shouldThrowApiExceptionWhenKeyClassIsNullForGetMapType() {
+        ApiException ex = assertThrows(ApiException.class, () -> GsonTypesUtil.getMapType(null, Integer.class));
+        assertEquals("Key class and value class must not be null", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when valueClass is null for getMapType")
+    void shouldThrowApiExceptionWhenValueClassIsNullForGetMapType() {
+        ApiException ex = assertThrows(ApiException.class, () -> GsonTypesUtil.getMapType(String.class, null));
+        assertEquals("Key class and value class must not be null", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when both classes are null for getMapType")
+    void shouldThrowApiExceptionWhenBothClassesAreNullForGetMapType() {
+        ApiException ex = assertThrows(ApiException.class, () -> GsonTypesUtil.getMapType(null, null));
+        assertEquals("Key class and value class must not be null", ex.getMessage());
+    }
+
+    // =============== getType(Class<?>, Class<?>...) Varargs Tests ===============
+
+    @Test
+    @DisplayName("Should create parameterized type with multiple generic parameters")
+    void shouldCreateTypeWithMultipleGenericParameters() {
+        Type result = GsonTypesUtil.getType(Map.class, String.class, Integer.class);
+
+        assertNotNull(result, "Result should not be null");
+
+        Type expectedType = TypeToken.getParameterized(Map.class, String.class, Integer.class).getType();
+        assertEquals(expectedType, result);
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when rawClass is null for varargs getType")
+    void shouldThrowApiExceptionWhenRawClassIsNullForVarargsGetType() {
+        ApiException ex = assertThrows(ApiException.class,
+                () -> GsonTypesUtil.getType(null, String.class, Integer.class));
+        assertEquals("Raw class and generic classes must not be null or empty", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when genClasses is null for varargs getType")
+    void shouldThrowApiExceptionWhenGenClassesIsNullForVarargsGetType() {
+        ApiException ex = assertThrows(ApiException.class,
+                () -> GsonTypesUtil.getType(Map.class, (Class<?>[]) null));
+        assertEquals("Raw class and generic classes must not be null or empty", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when genClasses is empty for varargs getType")
+    void shouldThrowApiExceptionWhenGenClassesIsEmptyForVarargsGetType() {
+        ApiException ex = assertThrows(ApiException.class,
+                () -> GsonTypesUtil.getType(Map.class, new Class<?>[0]));
+        assertEquals("Raw class and generic classes must not be null or empty", ex.getMessage());
+    }
+
+    // =============== getMapToken(Class<K>, Class<V>) Tests ===============
+
+    @Test
+    @DisplayName("Should create Map TypeToken correctly")
+    void shouldCreateMapTokenCorrectly() {
+        TypeToken<Map<String, Integer>> token = GsonTypesUtil.getMapToken(String.class, Integer.class);
+
+        assertNotNull(token);
+        assertEquals(TypeToken.getParameterized(Map.class, String.class, Integer.class).getType(), token.getType());
+    }
+
+    @Test
+    @DisplayName("Should serialize and deserialize Map with TypeToken")
+    void shouldSerializeAndDeserializeMapWithToken() {
+        Map<String, Integer> original = Map.of("x", 10, "y", 20);
+        String json = gson.toJson(original);
+
+        TypeToken<Map<String, Integer>> token = GsonTypesUtil.getMapToken(String.class, Integer.class);
+        Map<String, Integer> result = gson.fromJson(json, token);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(10, result.get("x"));
+        assertEquals(20, result.get("y"));
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when keyClass is null for getMapToken")
+    void shouldThrowApiExceptionWhenKeyClassIsNullForGetMapToken() {
+        ApiException ex = assertThrows(ApiException.class, () -> GsonTypesUtil.getMapToken(null, Integer.class));
+        assertEquals("Key class and value class must not be null", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when valueClass is null for getMapToken")
+    void shouldThrowApiExceptionWhenValueClassIsNullForGetMapToken() {
+        ApiException ex = assertThrows(ApiException.class, () -> GsonTypesUtil.getMapToken(String.class, null));
+        assertEquals("Key class and value class must not be null", ex.getMessage());
+    }
+
+    // =============== getListToken(Class<T>) Tests ===============
+
+    @Test
+    @DisplayName("Should create List TypeToken correctly")
+    void shouldCreateListTokenCorrectly() {
+        TypeToken<List<String>> token = GsonTypesUtil.getListToken(String.class);
+
+        assertNotNull(token);
+        assertEquals(TypeToken.getParameterized(List.class, String.class).getType(), token.getType());
+    }
+
+    @Test
+    @DisplayName("Should serialize and deserialize List with TypeToken")
+    void shouldSerializeAndDeserializeListWithToken() {
+        List<String> original = List.of("alpha", "beta");
+        String json = gson.toJson(original);
+
+        TypeToken<List<String>> token = GsonTypesUtil.getListToken(String.class);
+        List<String> result = gson.fromJson(json, token);
+
+        assertNotNull(result);
+        assertEquals(original, result);
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when class is null for getListToken")
+    void shouldThrowApiExceptionWhenClassIsNullForGetListToken() {
+        ApiException ex = assertThrows(ApiException.class, () -> GsonTypesUtil.getListToken(null));
+        assertEquals("Class must not be null", ex.getMessage());
+    }
+
+    // =============== getSetToken(Class<T>) Tests ===============
+
+    @Test
+    @DisplayName("Should create Set TypeToken correctly")
+    void shouldCreateSetTokenCorrectly() {
+        TypeToken<Set<String>> token = GsonTypesUtil.getSetToken(String.class);
+
+        assertNotNull(token);
+        assertEquals(TypeToken.getParameterized(Set.class, String.class).getType(), token.getType());
+    }
+
+    @Test
+    @DisplayName("Should serialize and deserialize Set with TypeToken")
+    void shouldSerializeAndDeserializeSetWithToken() {
+        Set<Integer> original = Set.of(1, 2, 3);
+        String json = gson.toJson(original);
+
+        TypeToken<Set<Integer>> token = GsonTypesUtil.getSetToken(Integer.class);
+        Set<Integer> result = gson.fromJson(json, token);
+
+        assertNotNull(result);
+        assertEquals(original, result);
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when class is null for getSetToken")
+    void shouldThrowApiExceptionWhenClassIsNullForGetSetToken() {
+        ApiException ex = assertThrows(ApiException.class, () -> GsonTypesUtil.getSetToken(null));
+        assertEquals("Class must not be null", ex.getMessage());
+    }
+
+    // =============== getCollectionToken(Class<T>) Tests ===============
+
+    @Test
+    @DisplayName("Should create Collection TypeToken correctly")
+    void shouldCreateCollectionTokenCorrectly() {
+        TypeToken<Collection<Double>> token = GsonTypesUtil.getCollectionToken(Double.class);
+
+        assertNotNull(token);
+        assertEquals(TypeToken.getParameterized(Collection.class, Double.class).getType(), token.getType());
+    }
+
+    @Test
+    @DisplayName("Should serialize and deserialize Collection with TypeToken")
+    void shouldSerializeAndDeserializeCollectionWithToken() {
+        Collection<String> original = List.of("one", "two", "three");
+        String json = gson.toJson(original);
+
+        TypeToken<Collection<String>> token = GsonTypesUtil.getCollectionToken(String.class);
+        Collection<String> result = gson.fromJson(json, token);
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+        assertTrue(result.containsAll(original));
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when class is null for getCollectionToken")
+    void shouldThrowApiExceptionWhenClassIsNullForGetCollectionToken() {
+        ApiException ex = assertThrows(ApiException.class, () -> GsonTypesUtil.getCollectionToken(null));
+        assertEquals("Class must not be null", ex.getMessage());
+    }
+
+    // =============== getTypeToken(Class<?>, Class<?>...) Tests ===============
+
+    @Test
+    @DisplayName("Should create TypeToken with multiple generic parameters")
+    void shouldCreateTypeTokenWithMultipleGenericParameters() {
+        TypeToken<?> token = GsonTypesUtil.getTypeToken(Map.class, String.class, Integer.class);
+
+        assertNotNull(token);
+        assertEquals(TypeToken.getParameterized(Map.class, String.class, Integer.class).getType(), token.getType());
+    }
+
+    @Test
+    @DisplayName("Should create TypeToken for a single generic parameter")
+    void shouldCreateTypeTokenForSingleGenericParameter() {
+        TypeToken<?> token = GsonTypesUtil.getTypeToken(List.class, String.class);
+
+        assertNotNull(token);
+        assertEquals(TypeToken.getParameterized(List.class, String.class).getType(), token.getType());
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when rawClass is null for getTypeToken")
+    void shouldThrowApiExceptionWhenRawClassIsNullForGetTypeToken() {
+        ApiException ex = assertThrows(ApiException.class,
+                () -> GsonTypesUtil.getTypeToken(null, String.class));
+        assertEquals("Raw class and generic classes must not be null or empty", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when genClasses is null for getTypeToken")
+    void shouldThrowApiExceptionWhenGenClassesIsNullForGetTypeToken() {
+        ApiException ex = assertThrows(ApiException.class,
+                () -> GsonTypesUtil.getTypeToken(Map.class, (Class<?>[]) null));
+        assertEquals("Raw class and generic classes must not be null or empty", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw ApiException when genClasses is empty for getTypeToken")
+    void shouldThrowApiExceptionWhenGenClassesIsEmptyForGetTypeToken() {
+        ApiException ex = assertThrows(ApiException.class,
+                () -> GsonTypesUtil.getTypeToken(Map.class, new Class<?>[0]));
+        assertEquals("Raw class and generic classes must not be null or empty", ex.getMessage());
     }
 
     /**
