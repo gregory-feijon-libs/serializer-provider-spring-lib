@@ -73,7 +73,7 @@
         <lombok.version>1.18.46</lombok.version>
         <jacoco.version>0.8.14</jacoco.version>
         <sonar.plugin.version>5.5.0.6356</sonar.plugin.version>
-        <spring.starter.version>3.5.12</spring.starter.version>
+        <spring.starter.version>3.5.14</spring.starter.version>
         <jackson.libs.version>2.21.2</jackson.libs.version> <!--TODO: quando acabarem de realocar as demais libs, usar versão unica-->
     </properties>
 
