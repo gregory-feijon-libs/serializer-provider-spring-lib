@@ -12,7 +12,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import io.github.gregoryfeijon.serializer.provider.exception.ApiException;
+import io.github.gregoryfeijon.serializer.provider.exception.SerializationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +39,7 @@ public class JsonNodeTypeAdapter implements JsonSerializer<JsonNode>, JsonDeseri
      * @param type                     The type of the object being serialized
      * @param jsonSerializationContext The serialization context
      * @return The Gson JsonElement representation
-     * @throws ApiException If there is an error serializing the JsonNode
+     * @throws SerializationException If there is an error serializing the JsonNode
      */
     @Override
     public JsonElement serialize(JsonNode jsonNode, Type type, JsonSerializationContext jsonSerializationContext) {
@@ -48,7 +48,7 @@ public class JsonNodeTypeAdapter implements JsonSerializer<JsonNode>, JsonDeseri
             try {
                 json = mapper.writeValueAsString(jsonNode);
             } catch (JsonProcessingException e) {
-                throw new ApiException("Error when serializing data of JsonNode type");
+                throw new SerializationException("Error when serializing data of JsonNode type", e);
             }
             return JsonParser.parseString(json);
         }
@@ -62,8 +62,8 @@ public class JsonNodeTypeAdapter implements JsonSerializer<JsonNode>, JsonDeseri
      * @param type                       The type of the object being deserialized
      * @param jsonDeserializationContext The deserialization context
      * @return The Jackson JsonNode representation
-     * @throws JsonParseException If there is an error during deserialization
-     * @throws ApiException       If there is an error deserializing the JsonNode
+     * @throws JsonParseException      If there is an error during deserialization
+     * @throws SerializationException  If there is an error deserializing the JsonNode
      */
     @Override
     public JsonNode deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
@@ -71,7 +71,7 @@ public class JsonNodeTypeAdapter implements JsonSerializer<JsonNode>, JsonDeseri
             try {
                 return mapper.readTree(getJsonStringFromJsonElement(jsonElement));
             } catch (JsonProcessingException e) {
-                throw new ApiException("Error when deserializing data of JsonNode type");
+                throw new SerializationException("Error when deserializing data of JsonNode type", e);
             }
         }
         return null;

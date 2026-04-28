@@ -1,15 +1,16 @@
 package io.github.gregoryfeijon.serializer.provider.config;
 
+import io.github.gregoryfeijon.serializer.provider.config.condition.GsonOrJacksonOnClasspathCondition;
 import io.github.gregoryfeijon.serializer.provider.domain.properties.SerializerProviderProperties;
 import io.github.gregoryfeijon.serializer.provider.util.serialization.adapter.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Conditional;
 
 /**
  * Auto-configuration for the SerializerProvider.
@@ -85,10 +86,7 @@ import org.springframework.context.annotation.ComponentScan;
         havingValue = "true",
         matchIfMissing = true
 )
-@ConditionalOnClass(name = {
-        "com.google.gson.Gson",
-        "com.fasterxml.jackson.databind.ObjectMapper"
-})
+@Conditional(GsonOrJacksonOnClasspathCondition.class)
 public class SerializerProviderAutoConfiguration {
 
     /**

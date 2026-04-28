@@ -149,11 +149,32 @@ class ApiExceptionTest {
         @Test
         @DisplayName("SerializationException should extend ApiException")
         void serializationExceptionShouldExtendApiException() {
-            // Act
             SerializationException exception = new SerializationException("test");
-
-            // Assert
             assertThat(exception).isInstanceOf(ApiException.class);
+        }
+
+        @Test
+        @DisplayName("SerializerConfigurationException should extend ApiException")
+        void serializerConfigurationExceptionShouldExtendApiException() {
+            SerializerConfigurationException exception = new SerializerConfigurationException("test");
+            assertThat(exception).isInstanceOf(ApiException.class);
+        }
+
+        @Test
+        @DisplayName("SerializerConfigurationException should carry cause")
+        void serializerConfigurationExceptionShouldCarryCause() {
+            RuntimeException cause = new RuntimeException("root");
+            SerializerConfigurationException exception = new SerializerConfigurationException("cfg error", cause);
+            assertThat(exception.getMessage()).isEqualTo("cfg error");
+            assertThat(exception.getCause()).isSameAs(cause);
+        }
+
+        @Test
+        @DisplayName("SerializerConfigurationException should wrap cause only")
+        void serializerConfigurationExceptionShouldWrapCause() {
+            RuntimeException cause = new RuntimeException("root");
+            SerializerConfigurationException exception = new SerializerConfigurationException(cause);
+            assertThat(exception.getCause()).isSameAs(cause);
         }
     }
 }
