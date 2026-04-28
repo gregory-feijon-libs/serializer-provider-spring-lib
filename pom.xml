@@ -74,7 +74,7 @@
         <jacoco.version>0.8.14</jacoco.version>
         <sonar.plugin.version>5.6.0.6792</sonar.plugin.version>
         <spring.starter.version>3.5.14</spring.starter.version>
-        <jackson.libs.version>2.21.2</jackson.libs.version> <!--TODO: quando acabarem de realocar as demais libs, usar versão unica-->
+        <jackson.libs.version>2.21.2</jackson.libs.version>
     </properties>
 
     <profiles>
@@ -140,7 +140,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.21</version>
+            <version>2.21</version> <!-- annotations releases only major/minor, no patch -->
         </dependency>
 
         <dependency>

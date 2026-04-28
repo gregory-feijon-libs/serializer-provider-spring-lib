@@ -6,7 +6,7 @@ import io.github.gregoryfeijon.object.factory.commons.utils.enums.EnumUtil;
 import io.github.gregoryfeijon.object.factory.commons.utils.factory.FactoryUtil;
 import io.github.gregoryfeijon.serializer.provider.domain.enums.SerializationType;
 import io.github.gregoryfeijon.serializer.provider.domain.properties.SerializerProviderProperties;
-import io.github.gregoryfeijon.serializer.provider.exception.ApiException;
+import io.github.gregoryfeijon.serializer.provider.exception.SerializerConfigurationException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -441,13 +441,13 @@ public final class SerializerProvider {
      * context and caches it for future use. This initialization is performed once
      * and the result is reused across all subsequent calls.
      *
-     * @throws ApiException If the properties bean cannot be retrieved from the context
+     * @throws SerializerConfigurationException If the properties bean cannot be retrieved from the context
      */
     private static void initializeProps() {
         if (configProps.get() == null) {
             SerializerProviderProperties props = FactoryUtil.getBean(SerializerProviderProperties.class);
             if (props == null) {
-                throw new ApiException("Error while trying to get serializer provider properties values!");
+                throw new SerializerConfigurationException("Error while trying to get serializer provider properties values!");
             }
             configProps.set(props);
         }
