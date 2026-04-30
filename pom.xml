@@ -74,7 +74,7 @@
         <jacoco.version>0.8.14</jacoco.version>
         <sonar.plugin.version>5.6.0.6792</sonar.plugin.version>
         <spring.starter.version>3.5.14</spring.starter.version>
-        <jackson.libs.version>2.21.2</jackson.libs.version>
+        <jackson.libs.version>2.21.3</jackson.libs.version>
     </properties>
 
     <profiles>
