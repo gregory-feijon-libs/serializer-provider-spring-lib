@@ -5,7 +5,7 @@
 
     <groupId>io.github.gregoryfeijon</groupId>
     <artifactId>serializer-provider-spring-lib</artifactId>
-    <version>2.6.1</version>
+    <version>2.6.2</version>
     <name>serializer-provider-spring-lib</name>
     <description>A lightweight Java library that simplifies GSON and Jackson setup while providing an easy and flexible
         way to switch between them at runtime.
@@ -74,7 +74,7 @@
         <jacoco.version>0.8.14</jacoco.version>
         <sonar.plugin.version>5.6.0.6792</sonar.plugin.version>
         <spring.starter.version>3.5.14</spring.starter.version>
-        <jackson.libs.version>2.21.2</jackson.libs.version>
+        <jackson.libs.version>2.21.3</jackson.libs.version>
     </properties>
 
     <profiles>
@@ -130,7 +130,7 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-to-slf4j</artifactId>
-            <version>2.25.4</version>
+            <version>2.26.0</version>
             <scope>compile</scope>
         </dependency>
 
@@ -158,13 +158,13 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.13.2</version>
+            <version>2.14.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
-            <version>6.6.49.Final</version>
+            <version>6.6.50.Final</version>
             <scope>provided</scope>
         </dependency>
 
@@ -178,7 +178,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.17</version>
+            <version>2.0.18</version>
             <scope>provided</scope>
         </dependency>
 
