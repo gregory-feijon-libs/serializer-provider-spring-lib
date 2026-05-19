@@ -14,7 +14,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 public class GsonOrJacksonOnClasspathCondition extends AnyNestedCondition {
 
     public GsonOrJacksonOnClasspathCondition() {
-        super(ConfigurationPhase.REGISTER_BEAN);
+        super(ConfigurationPhase.PARSE_CONFIGURATION);
     }
 
     @ConditionalOnClass(name = "com.google.gson.Gson")
