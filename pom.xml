@@ -74,7 +74,7 @@
         <jacoco.version>0.8.14</jacoco.version>
         <sonar.plugin.version>5.6.0.6792</sonar.plugin.version>
         <spring.starter.version>3.5.14</spring.starter.version>
-        <jackson.libs.version>2.21.2</jackson.libs.version>
+        <jackson.libs.version>2.21.3</jackson.libs.version>
     </properties>
 
     <profiles>
@@ -158,7 +158,7 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.13.2</version>
+            <version>2.14.0</version>
         </dependency>
 
         <dependency>
@@ -178,7 +178,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.17</version>
+            <version>2.0.18</version>
             <scope>provided</scope>
         </dependency>
 
