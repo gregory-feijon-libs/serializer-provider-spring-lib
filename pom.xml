@@ -72,7 +72,7 @@
         </sonar.coverage.exclusions>
         <lombok.version>1.18.46</lombok.version>
         <jacoco.version>0.8.14</jacoco.version>
-        <sonar.plugin.version>5.6.0.6792</sonar.plugin.version>
+        <sonar.plugin.version>5.7.0.6970</sonar.plugin.version>
         <spring.starter.version>3.5.14</spring.starter.version>
         <jackson.libs.version>2.21.3</jackson.libs.version>
     </properties>
