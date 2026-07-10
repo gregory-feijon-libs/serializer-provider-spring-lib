@@ -118,7 +118,7 @@ public class JsonNodeTypeAdapter implements JsonSerializer<JsonNode>, JsonDeseri
     private String getJsonFromJsonObject(JsonElement jsonElement) {
         String json;
         JsonObject jsonObject = jsonElement.getAsJsonObject();
-        if (jsonObject.keySet().contains("_children")) {
+        if (jsonObject.has("_children")) {
             json = jsonObject.get("_children").toString();
         } else {
             json = jsonObject.toString();

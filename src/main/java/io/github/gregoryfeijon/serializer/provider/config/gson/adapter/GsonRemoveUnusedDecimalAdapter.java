@@ -132,8 +132,8 @@ public class GsonRemoveUnusedDecimalAdapter<T> extends TypeAdapter<T> {
      * @return The BigDecimal representation of the value
      */
     private BigDecimal getBigDecimalValue(T value) {
-        if (value.getClass().isInstance(BigDecimal.class)) {
-            return (BigDecimal) value;
+        if (value instanceof BigDecimal bigDecimal) {
+            return bigDecimal;
         } else {
             return new BigDecimal(value.toString());
         }
