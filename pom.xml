@@ -5,7 +5,7 @@
 
     <groupId>io.github.gregoryfeijon</groupId>
     <artifactId>serializer-provider-spring-lib</artifactId>
-    <version>2.6.3</version>
+    <version>2.6.5</version>
     <name>serializer-provider-spring-lib</name>
     <description>A lightweight Java library that simplifies GSON and Jackson setup while providing an easy and flexible
         way to switch between them at runtime.
@@ -205,7 +205,7 @@
         <dependency>
             <groupId>io.github.gregoryfeijon</groupId>
             <artifactId>object-factory-commons-spring-lib</artifactId>
-            <version>1.1.2</version>
+            <version>2.0.0</version>
         </dependency>
     </dependencies>
 
